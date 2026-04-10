@@ -1,0 +1,569 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE composition PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ice="http://www.icesoft.com/icefaces/component"
+                xmlns:ace="http://www.icefaces.org/icefaces/components"
+                xmlns:c="http://java.sun.com/jsp/jstl/core">
+
+    <f:view contentType="text/html">
+
+        <ice:panelGrid width="100%" style="text-align: center; margin-bottom: 10px;">
+            <h:outputLabel value="RESUMEN DEL PAO" styleClass="title" style="font-size: 16px; font-weight: bold;"/>
+        </ice:panelGrid>
+
+        <h:form id="frmConsultaPao">
+
+            <ace:tabSet id="tbPrincipal" clientSide="true" selectedIndex="#{consultaEmpleadosPlan.indiceTab}" >
+
+                <ace:tabPane label="BÚSQUEDA Y FILTROS">
+
+                    <!-- Barra de botones -->
+                    <h:panelGrid styleClass="centeredPanelGrid" width="100%">
+                        <ace:menuBar>
+                            <ace:menuItem id="miBsqPao"
+                                          value="Buscar"
+                                          icon="ui-icon ui-icon-search"
+                                          action="#{consultaEmpleadosPlan.buscarPaos}">
+                                <ace:ajax execute="@form" render="@form"/>
+                            </ace:menuItem>
+                            <ace:menuItem id="miLimpiarPao"
+                                          value="Limpiar"
+                                          icon="ui-icon ui-icon-refresh"
+                                          action="#{consultaEmpleadosPlan.limpiarBusqueda}">
+                                <ace:ajax execute="@this" render="@form"/>
+                            </ace:menuItem>
+                        </ace:menuBar>
+                    </h:panelGrid>
+
+                    <!-- Filtro por PEP -->
+                    <ice:panelGroup style="margin-bottom:15px;border:1px solid #ccc;
+                                    border-radius:5px;background-color:#f9f9f9;
+                                    margin-top:10px;">
+
+                        <ice:panelGrid styleClass="centeredPanelGrid" width="100%" columns="1"
+                                       style="background-color:#5c9ccc;padding:5px;">
+                            <ice:outputLabel value="FILTROS DE BÚSQUEDA"
+                                             style="font-weight:bold;color:white;"/>
+                        </ice:panelGrid>
+
+                        <ice:panelGrid columns="2" style="width:100%;padding:10px;" cellpadding="5">
+                            <h:outputLabel value="Plan Estratégico (PEP):" style="font-weight:bold"/>
+                            <ace:simpleSelectOneMenu value="#{consultaEmpleadosPlan.selIdPep}"
+                                                     style="width:350px;">
+                                <f:selectItem itemLabel="-- Seleccione --" itemValue="0"/>
+                                <f:selectItems value="#{consultaEmpleadosPlan.listaPeps}"/>
+                            </ace:simpleSelectOneMenu>
+                        </ice:panelGrid>
+
+                    </ice:panelGroup>
+
+                    <ice:panelGroup rendered="#{not empty consultaEmpleadosPlan.listaPaosEncontrados}">
+
+                        <ace:dataTable id="tblPaos"
+                                       value="#{consultaEmpleadosPlan.listaPaosEncontrados}"
+                                       var="item"
+                                       rows="10"
+                                       paginator="true"
+                                       paginatorPosition="bottom"
+                                       selectionMode="single"
+                                       rowSelectListener="#{consultaEmpleadosPlan.seleccionarPao}"
+                                       style="cursor:pointer;">
+
+                            <ace:ajax event="select" render="@form"/>
+
+                            <ace:column headerText="ID PAO" sortBy="#{item.idpao}">
+                                <h:outputText value="#{item.idpao}"/>
+                            </ace:column>
+
+                            <ace:column headerText="Nombre PAO" sortBy="#{item.nombrepao}">
+                                <h:outputText value="#{item.nombrepao}"/>
+                            </ace:column>
+
+                            <ace:column headerText="Año" sortBy="#{item.anio}"
+                                        style="width:60px;text-align:center;">
+                                <h:outputText value="#{item.anio}"/>
+                            </ace:column>
+
+
+
+                            <ace:column headerText="Nombre PEP" sortBy="#{item.idpep.descrip}">
+                                <h:outputText value="#{item.idpep.descrip}"/>
+                            </ace:column>
+
+                            <ace:column headerText="Coordinador">
+                                <h:outputText value="#{item.idcoordinador.persona.nomcom}"/>
+                            </ace:column>
+
+                            <ace:column headerText="Agencia">
+                                <h:outputText value="#{item.idcoordinador.agencia.nombre}"/>
+                            </ace:column>
+
+                        </ace:dataTable>
+
+
+                    </ice:panelGroup>
+
+                </ace:tabPane>
+
+                <ace:tabPane label="DETALLE DEL PAO ACTUAL" disabled="#{!consultaEmpleadosPlan.tienePaoAsignado}">
+
+                    <h:panelGrid styleClass="centeredPanelGrid" width="100%">
+
+                        <h:panelGrid columns="1" width="100%" styleClass="panel-grid-header">
+
+                            <h:panelGrid styleClass="centeredPanelGrid" width="100%" columns="1" 
+                                         style="background-color: #5c9ccc; padding: 5px;">
+                                <h:outputLabel value="DATOS GENERALES DEL PLAN OPERATIVO" style="font-weight: bold; color: white;"/>
+                            </h:panelGrid>
+
+                            <h:panelGrid styleClass="centeredPanelGrid" width="100%">
+                                <ace:menuBar>
+                                    <ace:menuItem value="Ver PEP"
+                                                  icon="ui-icon ui-icon-script"
+                                                  action="#{consultaEmpleadosPlan.cargarVistaGeneral}"> 
+                                        <ace:ajax execute="@this" 
+                                                  render=":popupResumenPep" 
+                                                  onComplete="popupResumenPep.show();"/>
+                                    </ace:menuItem>
+
+                                    <ace:menuItem value="Imprimir Reporte PAO"
+                                                  icon="ui-icon ui-icon-print"
+                                                  action="#{consultaEmpleadosPlan.imprimirResumenPao}">
+                                        <ace:ajax execute="@this" render=":msgForm"/>
+                                    </ace:menuItem>
+
+                                    <ace:menuItem value="Imprimir Reporte PEP"
+                                                  icon="ui-icon ui-icon-print"
+                                                  action="#{consultaEmpleadosPlan.imprimirResumenPep}">
+                                        <ace:ajax execute="@this" render=":msgForm"/>
+                                    </ace:menuItem>
+
+                                </ace:menuBar>
+
+
+                            </h:panelGrid>
+
+
+
+                            <ice:panelGroup style="padding: 15px; border: 1px solid #ddd; background-color: white;">
+                                <h:panelGrid columns="4" style="width: 100%;" cellpadding="5">
+                                    <h:outputLabel value="Nombre PAO:" style="font-weight:bold"/>
+                                    <ace:textEntry value="#{consultaEmpleadosPlan.paoVisualizado.nombrepao}" style="width: 300px; background-color: #eee;" readonly="true"/>
+
+                                    <h:outputLabel value="Año:" style="font-weight:bold"/>
+                                    <ace:textEntry value="#{consultaEmpleadosPlan.paoVisualizado.anio}" style="width: 60px; background-color: #eee;" readonly="true"/>
+
+                                    <h:outputLabel value="Coordinador:" style="font-weight:bold"/>
+                                    <ace:textEntry value="#{consultaEmpleadosPlan.paoVisualizado.idcoordinador.persona.nomcom}" style="width: 300px; background-color: #eee;" readonly="true"/>
+
+                                    <h:outputLabel value="Área:" style="font-weight:bold"/>
+                                    <ace:textEntry value="#{consultaEmpleadosPlan.nombreArea}" style="width: 300px; background-color: #eee;" readonly="true"/>
+                                </h:panelGrid>
+                            </ice:panelGroup>
+
+                        </h:panelGrid>
+
+                        <div style="height: 15px;"></div>
+
+
+                        <ace:tabSet clientSide="true" style="width: 100%;">
+
+                            <ace:tabPane label="Sin Acciones con Iniciativas vinculadas"
+                                         rendered="#{empty consultaEmpleadosPlan.listaResumen}">
+                                <div style="padding:30px; text-align:center;
+                                     background-color:#fcf8e3; border:1px solid #faebcc;
+                                     border-radius:5px; margin:15px;">
+                                    <h:outputText value="Este PAO aún no tiene acciones vinculadas a iniciativas."
+                                                  style=" font-weight:bold; font-size:13px;
+                                                  display:block; margin-bottom:8px;"/>
+                                    <h:outputText value="Las acciones deben ser vinculadas a las Iniciativas desde el módulo de Gestión de Iniciativas."
+                                                  style=" font-size:11px;"/>
+                                </div>
+                            </ace:tabPane>
+
+                            <c:forEach items="#{consultaEmpleadosPlan.listaResumen}" var="persp">
+                                <ace:tabPane label="#{persp.nombrePerspectiva}">
+
+                                    <div style="overflow-x: auto; overflow-y: auto; padding: 10px; width: 100%;">
+
+                                        <!-- Sin iniciativas -->
+                                        <h:panelGroup layout="block"
+                                                      rendered="#{empty persp.listaIniciativas}"
+                                                      style="padding: 20px; text-align: center; color: #999;">
+                                            <h:outputText value="No hay iniciativas en esta perspectiva."/>
+                                        </h:panelGroup>
+
+                                        <ui:repeat value="#{persp.listaIniciativas}" var="inic">
+                                            <div style="margin-bottom: 25px; border-bottom: 1px solid #ccc; padding-bottom: 10px;">
+
+                                                <!-- Cabecera de iniciativa -->
+                                                <div style="background-color: #f5f5f5; padding: 8px;
+                                                     border-left: 4px solid #5c9ccc; margin-bottom: 5px;">
+                                                    <h:panelGroup>
+                                                        <h:graphicImage value="/resources/images/check.png"
+                                                                        style="width:14px; height:14px;
+                                                                        vertical-align:bottom; margin-right:5px;"/>
+                                                        <h:outputText value="INICIATIVA: #{inic.nombreIniciativa}"
+                                                                      style="font-weight:bold; font-size:12px; display:inline-block;"/>
+                                                    </h:panelGroup>
+                                                    <div style="margin-left: 20px; margin-top: 3px;">
+                                                        <h:outputText value="Objetivo: #{inic.nombreObjetivo}"
+                                                                      style="font-size:10px; color:#666; display:block;"/>
+                                                        <h:outputText value="Indicador: #{inic.nombreIndicador}"
+                                                                      style="font-size:10px; color:#666; display:block;"/>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Sin acciones -->
+                                                <h:panelGroup layout="block"
+                                                              rendered="#{empty inic.acciones}"
+                                                              style="padding:15px; text-align:center; color:#999;
+                                                              font-style:italic; border:1px dashed #ccc;
+                                                              background-color:#fafafa;">
+                                                    <h:outputText value="No hay acciones vinculadas en este PAO para esta iniciativa."/>
+                                                </h:panelGroup>
+
+                                                <h:panelGroup layout="block" rendered="#{not empty inic.acciones}">
+                                                    <table style="width:99%; border-collapse:collapse; font-size:10px; border:1px solid #ccc;">
+                                                        <thead>
+                                                            <tr class="inic-enca">
+                                                                <th rowspan="2" style="width:18%;">ESTRATEGIA</th>
+                                                                <th rowspan="2" style="width:14%;">ACCIÓN PRINCIPAL</th>
+                                                                <th rowspan="2" style="width:10%;">ACCIONES PLANIFICADAS</th>
+                                                                <th colspan="3">I TRIM (Ene-Mar)</th>
+                                                                <th colspan="3">II TRIM (Abr-Jun)</th>
+                                                                <th colspan="3">III TRIM (Jul-Sep)</th>
+                                                                <th colspan="3">IV TRIM (Oct-Dic)</th>
+                                                                <th rowspan="2">AVANCE</th>
+                                                                <th rowspan="2">MEDIO VERIF.</th>
+                                                            </tr>
+                                                            <tr class="inic-enca">
+                                                                <th style="min-width:35px;">ENE</th>
+                                                                <th style="min-width:35px;">FEB</th>
+                                                                <th style="min-width:35px;">MAR</th>
+                                                                <th style="min-width:35px;">ABR</th>
+                                                                <th style="min-width:35px;">MAY</th>
+                                                                <th style="min-width:35px;">JUN</th>
+                                                                <th style="min-width:35px;">JUL</th>
+                                                                <th style="min-width:35px;">AGO</th>
+                                                                <th style="min-width:35px;">SEP</th>
+                                                                <th style="min-width:35px;">OCT</th>
+                                                                <th style="min-width:35px;">NOV</th>
+                                                                <th style="min-width:35px;">DIC</th>
+                                                            </tr>
+                                                        </thead>
+
+                                                        <tbody>
+                                                            <ui:repeat value="#{inic.acciones}" var="acc">
+
+                                                                <ui:fragment rendered="#{empty acc.planificaciones}">
+                                                                    <tr>
+                                                                        <td style="border:1px solid #ccc; padding:5px; vertical-align:middle; background-color:#fafafa; font-size:9px; font-weight:bold;">
+                                                                            <h:outputText value="#{acc.estrategia}"/>
+                                                                        </td>
+                                                                        <td style="border:1px solid #ccc; padding:5px; vertical-align:middle; font-weight:bold;">
+                                                                            <h:outputText value="#{acc.descripcionAccion}"/>
+                                                                        </td>
+                                                                        <td style="border:1px solid #ccc; padding:5px; text-align:center; color:#999; font-style:italic;">
+                                                                            Sin planificación
+                                                                        </td>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc;"/>
+                                                                        <td style="border:1px solid #ccc; padding:5px; text-align:center; font-weight:bold; vertical-align:middle;">
+                                                                            <h:outputText value="#{acc.porcentajeCumplimiento}%" style="color:#{acc.porcentajeCumplimiento ge 100 ? 'green' : 'black'};"/>
+                                                                        </td>
+                                                                        <td style="border:1px solid #ccc; padding:5px; font-size:9px;">
+                                                                            <h:outputText value="#{acc.medioVerificacion}"/>
+                                                                        </td>
+                                                                    </tr>
+                                                                </ui:fragment>
+
+                                                                <ui:fragment rendered="#{not empty acc.planificaciones}">
+                                                                    <ui:repeat value="#{acc.planificaciones}" var="plan" varStatus="st">
+                                                                        <tr>
+                                                                            <ui:fragment rendered="#{st.first}">
+                                                                                <td rowspan="#{acc.planificaciones.size()}" style="border:1px solid #ccc; padding:5px; vertical-align:middle; font-weight:bold; background-color:#fafafa; font-size:9px;">
+                                                                                    <h:outputText value="#{acc.estrategia}"/>
+                                                                                </td>
+                                                                            </ui:fragment>
+
+                                                                            <ui:fragment rendered="#{st.first}">
+                                                                                <td rowspan="#{acc.planificaciones.size()}" style="border:1px solid #ccc; padding:5px; vertical-align:middle;">
+                                                                                    <h:outputText value="#{acc.descripcionAccion}"/>
+                                                                                </td>
+                                                                            </ui:fragment>
+
+                                                                            <td style="border:1px solid #ccc; padding:4px; vertical-align:middle; background-color:#f9f9f9; font-size:9px; color:#333;">
+                                                                                <h:outputText value="#{plan.actividad}"/>
+                                                                            </td>
+
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['1'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['2'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['3'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['4'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['5'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['6'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['7'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['8'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['9'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['10'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['11'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+                                                                            <td style="border:1px solid #ccc; text-align:center; vertical-align:middle; padding:2px;">
+                                                                                <h:outputText value="✓" rendered="#{plan.meses['12'] eq 'X'}" style="color:#5c9ccc; font-weight:bold; font-size:13px;"/>
+                                                                            </td>
+
+                                                                            <ui:fragment rendered="#{st.first}">
+                                                                                <td rowspan="#{acc.planificaciones.size()}" style="border:1px solid #ccc; padding:5px; text-align:center; font-weight:bold; vertical-align:middle;">
+                                                                                    <h:outputText value="#{acc.porcentajeCumplimiento}%" style="color:#{acc.porcentajeCumplimiento ge 100 ? 'green' : 'black'};"/>
+                                                                                </td>
+                                                                                <td rowspan="#{acc.planificaciones.size()}" style="border:1px solid #ccc; padding:5px; font-size:9px; vertical-align:top;">
+                                                                                    <h:outputText value="#{acc.medioVerificacion}"/>
+                                                                                </td>
+                                                                            </ui:fragment>
+
+                                                                        </tr>
+                                                                    </ui:repeat>
+                                                                </ui:fragment>
+
+                                                            </ui:repeat>
+                                                        </tbody>
+                                                    </table>
+                                                </h:panelGroup>
+
+                                            </div>
+                                        </ui:repeat>
+
+                                    </div>
+
+                                </ace:tabPane>
+                            </c:forEach>
+
+                        </ace:tabSet>
+                        
+                        
+                        
+                        
+                  <ice:panelGroup style="display:block; margin-top: 20px;">
+                            <ice:panelGrid width="100%" style="background-color: #5c9ccc; padding: 5px;">
+                                <ice:outputLabel value="HISTÓRICO DE TODAS LAS ACTIVIDADES NO PLANIFICADAS EJECUTADAS" 
+                                                 style="font-weight: bold; color: white;"/>
+                            </ice:panelGrid>
+
+                            <h:panelGroup id="panelNoPlanificadas" layout="block" style="border: 1px solid #ccc; padding: 10px; background-color: white;">
+
+                                <ace:dataTable id="tablaNoPlanificadas" 
+                                               value="#{consultaEmpleadosPlan.listaNoPlanificadasEvaluadas}" 
+                                               var="noPlan" 
+                                               rows="5" 
+                                               paginator="true" 
+                                               paginatorPosition="bottom"
+                                               emptyMessage="No se han registrado actividades no planificadas evaluadas aún en este PAO.">
+
+                                    <ace:column headerText="ID" style="width: 10px; text-align: center;">
+                                        <h:outputText value="#{noPlan.idaccinoplan}"/>
+                                    </ace:column>
+
+                                    <ace:column headerText="Perspectiva" style="width: 10%;">
+                                        <h:outputText value="#{noPlan.idestrategia.idindicadorcump.idobjetivo.idperspectiva.perspectivaMaestra.nombre}"/>
+                                    </ace:column>
+
+                                    <ace:column headerText="Objetivo Estratégico" style="width: 10%;">
+                                        <h:outputText value="#{noPlan.idestrategia.idindicadorcump.idobjetivo.codigooe} - #{noPlan.idestrategia.idindicadorcump.idobjetivo.descrip}"/>
+                                    </ace:column>
+
+                                    <ace:column headerText="Indicador de Cumplimiento" style="width: 10%;">
+                                        <h:outputText value="#{noPlan.idestrategia.idindicadorcump.codigoindicador} - #{noPlan.idestrategia.idindicadorcump.descrip}"/>
+                                    </ace:column>
+
+                                    <ace:column headerText="Línea Estratégica" style="width: 10%;">
+                                        <h:outputText value="#{noPlan.idestrategia.descrip}"/>
+                                    </ace:column>
+                                    
+                                    <ace:column headerText="Acción Realizada" style="width: 15%;">
+                                        <h:outputText value="#{noPlan.descrip}" style="font-weight: bold;"/>
+                                    </ace:column>
+
+                                    <ace:column headerText="Periodo" style="width: 50px; text-align: center; font-size: 10px;">
+                                        <h:outputText value="#{noPlan.perieval}"/>
+                                    </ace:column>
+
+                                    <ace:column headerText="Registro" style="width: 50px; text-align: center; font-size: 10px;">
+                                        <h:outputText value="#{noPlan.fchacrea}">
+                                            <f:convertDateTime pattern="dd/MM/yyyy"/>
+                                        </h:outputText>
+                                    </ace:column>
+
+                                    <ace:column headerText="Avance" sortBy="#{noPlan.cumplipct}" style="width: 50px; text-align: center;">
+                                        <h:outputText value="#{noPlan.cumplipct}%"
+                                                      style="font-weight:bold; font-size: 14px;
+                                                      color:#{noPlan.cumplipct ge 80 ? '#27ae60' 
+                                                            : noPlan.cumplipct ge 50 ? '#e67e22' : 'red'};"/>
+                                    </ace:column>
+                                    
+
+                                </ace:dataTable>
+
+                            </h:panelGroup>
+                        </ice:panelGroup>
+                        
+             
+
+
+
+                    </h:panelGrid>
+                </ace:tabPane>
+
+            </ace:tabSet>
+
+            <ace:dialog id="popupResumenPep" widgetVar="popupResumenPep" 
+                        header="Resumen del Plan Estratégico Participativo" 
+                        modal="true" width="1000"
+                        closable="true" resizable="false">
+
+                <h:panelGroup id="panelContenedorPep" layout="block">
+                    <ice:panelGroup style="height: 550px; padding: 10px; background-color: #fff;">
+
+
+                        <h:panelGrid columns="4" width="100%" style="margin-bottom: 20px; margin-top: 10px; text-align: center;">
+                            <h:panelGroup>
+                                <h:outputText value="PERSPECTIVAS" style="font-size: 11px; font-weight: bold; "/><br/>
+                                <h:outputText value="#{consultaEmpleadosPlan.totalGlobalPerspectivas}" style="font-size: 24px; font-weight: bold;"/>
+                            </h:panelGroup>
+
+                            <h:panelGroup>
+                                <h:outputText value="OBJETIVOS ESTRATÉGICOS" style="font-size: 11px; font-weight: bold;"/><br/>
+                                <h:outputText value="#{consultaEmpleadosPlan.totalGlobalObjetivos}" style="font-size: 24px; font-weight: bold; "/>
+                            </h:panelGroup>
+
+                            <h:panelGroup>
+                                <h:outputText value="INDICADORES DE CUMPLIMIENTO" style="font-size: 11px; font-weight: bold;"/><br/>
+                                <h:outputText value="#{consultaEmpleadosPlan.totalGlobalIndicadores}" style="font-size: 24px; font-weight: bold;"/>
+                            </h:panelGroup>
+
+                            <h:panelGroup>
+                                <h:outputText value="ESTRATEGIAS" style="font-size: 11px; font-weight: bold;"/><br/>
+                                <h:outputText value="#{consultaEmpleadosPlan.totalGlobalEstrategias}" style="font-size: 24px; font-weight: bold;"/>
+                            </h:panelGroup>
+                        </h:panelGrid>
+
+                        <table class="tabla-matriz">
+                            <thead>
+                                <tr>
+                                    <th>Perspectiva</th>
+                                    <th>Objetivo Estratégico</th>
+                                    <th>Indicadores de Cumplimiento</th>
+                                    <th>Líneas Estratégicas</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <ui:repeat value="#{consultaEmpleadosPlan.lstArbolCompleto}" var="per">
+                                    <ui:repeat value="#{per.plnpepobjetivoList}" var="obj" varStatus="objStatus">
+                                        <ui:repeat value="#{obj.plnpepindicumplList}" var="ind" varStatus="indStatus">
+                                            <ui:repeat value="#{ind.plnpeplinestrList}" var="est" varStatus="estStatus">
+                                                <tr>
+                                                    <ui:fragment rendered="#{objStatus.first and indStatus.first and estStatus.first}">
+                                                        <td class="col-perspectiva" rowspan="#{per.totalFilasPerspectiva}">
+                                                            <h:outputText value="#{per.perspectivaMaestra.nombre}" />
+                                                        </td>
+                                                    </ui:fragment>
+                                                    <ui:fragment rendered="#{indStatus.first and estStatus.first}">
+                                                        <td class="col-objetivo" rowspan="#{obj.totalFilas}">
+                                                            <span class="badge">#{obj.codigooe}</span><br/>
+                                                            <h:outputText value="#{obj.descrip}" style="font-size: 10px;"/>
+                                                        </td>
+                                                    </ui:fragment>
+                                                    <ui:fragment rendered="#{estStatus.first}">
+                                                        <td class="col-indicador" rowspan="#{ind.totalFilas}">
+                                                            <span class="badge-ind">#{ind.codigoindicador}</span>
+                                                            <h:outputText value="#{ind.descrip}" />
+                                                        </td>
+                                                    </ui:fragment>
+                                                    <td class="col-estrategia">
+                                                        <h:outputText value="#{est.descrip}" />
+                                                    </td>
+                                                </tr>
+                                            </ui:repeat>
+                                            <h:panelGroup rendered="#{empty ind.plnpeplinestrList}">
+                                                <tr>
+                                                    <ui:fragment rendered="#{objStatus.first and indStatus.first}">
+                                                        <td class="col-perspectiva" rowspan="#{per.totalFilasPerspectiva}">#{per.perspectivaMaestra.nombre}</td>
+                                                    </ui:fragment>
+                                                    <ui:fragment rendered="#{indStatus.first}">
+                                                        <td class="col-objetivo" rowspan="#{obj.totalFilas}">#{obj.descrip}</td>
+                                                    </ui:fragment>
+                                                    <td class="col-indicador">#{ind.descrip}</td>
+                                                    <td class="col-estrategia" style="color:#ccc;">Sin estrategias</td>
+                                                </tr>
+                                            </h:panelGroup>
+                                        </ui:repeat>
+                                    </ui:repeat>
+                                </ui:repeat>
+                            </tbody>
+                        </table>
+
+                        <h:panelGroup rendered="#{empty consultaEmpleadosPlan.lstArbolCompleto}" style="text-align: center; padding: 20px;">
+                            <h:outputText value="No se han cargado datos del Plan Estratégico." style="color: #777;"/>
+                        </h:panelGroup>
+                    </ice:panelGroup>
+                </h:panelGroup>
+            </ace:dialog>
+
+
+        </h:form>
+
+
+
+
+        <style>
+            .tabla-matriz { width: 100%; border-collapse: collapse; font-size: 11px; }
+            .tabla-matriz th { background-color: #5c9ccc; color: white; padding: 8px; border: 1px solid #ccc; text-align: center; }
+            .tabla-matriz td { border: 1px solid #ccc; padding: 5px; vertical-align: top; background-color: white; }
+
+            .col-perspectiva { background-color: #f2f2f2 !important; font-weight: bold; width: 12%; text-align: center; vertical-align: middle !important; }
+            .col-objetivo { width: 25%; }
+            .col-indicador { width: 28%; background-color: #fafafa !important; }
+            .col-estrategia { width: 35%; }
+
+            .badge { background-color: #5c9ccc; color: white; padding: 1px 3px; border-radius: 3px; font-size: 9px; font-weight: bold; }
+            .badge-ind { background-color: #f39c12; color: white; padding: 1px 3px; border-radius: 3px; font-size: 9px; font-weight: bold; margin-right: 5px; }
+
+            .inic-enca th{background-color:#5c9ccc;border:1px solid #ccc;color:white;padding:4px;text-align:center;}
+
+        </style>
+    </f:view>
+</ui:composition>

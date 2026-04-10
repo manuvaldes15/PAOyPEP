@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rptPlaneacionPAO" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="122f0d35-562c-4d8c-a47a-7f3c71a64898">
+	<property name="ireport.zoom" value="1.7715610000000155"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="1"/>
+	<parameter name="idPaoSeleccionado" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["C:\\Users\\ENVY360\\Desktop\\"]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[WITH BASE_ACCIONES AS (
+    SELECT
+        A.IDPAO,
+        A.IDESTRATEGIA,
+        'PLANIFICADA'       AS ORIGEN,
+        NVL(E.CUMPLIPCT, 0) AS PORCENTAJE
+    FROM PLNACCIONDETA A
+    LEFT JOIN (
+        SELECT IDACCIONPAO, MAX(CUMPLIPCT) AS CUMPLIPCT
+        FROM PLNACCIONEVAL
+        GROUP BY IDACCIONPAO
+    ) E ON A.IDACCIONPAO = E.IDACCIONPAO
+    WHERE A.IDPAO = $P{idPaoSeleccionado}
+    UNION ALL
+    SELECT
+        NP.IDPAO,
+        NP.IDESTRATEGIA,
+        'NO PLANIFICADA'    AS ORIGEN,
+        NVL(NP.CUMPLIPCT, 0) AS PORCENTAJE
+    FROM PLNACCIONSINPLAN NP
+    WHERE NP.IDPAO = $P{idPaoSeleccionado}
+),
+BASE_JERARQUIA AS (
+    SELECT
+        BA.ORIGEN,
+        BA.PORCENTAJE,
+        IND.IDINDICADORCUMP,
+        OE.IDOBJETIVO,
+        OE.CODIGOOE,
+        OE.DESCRIP AS NOMBRE_OE,
+        PD.IDPERSPECTIVA,
+        M.IDMAESTRO,
+        M.NOMBRE AS PERSPECTIVA
+    FROM BASE_ACCIONES BA
+    INNER JOIN PLNPEPLINESTR LE  ON BA.IDESTRATEGIA = LE.IDESTRATEGIA
+    INNER JOIN PLNPEPINDICUMPL IND ON LE.IDINDICADORCUMP = IND.IDINDICADORCUMP
+    INNER JOIN PLNPEPOBJETIVO OE  ON IND.IDOBJETIVO = OE.IDOBJETIVO
+    INNER JOIN PLNPERSPECTIVADETA PD ON OE.IDPERSPECTIVA = PD.IDPERSPECTIVA
+    INNER JOIN PLNPERSPECTIVA M   ON PD.IDMAESTRO = M.IDMAESTRO
+),
+NIVEL_OE AS (
+    SELECT
+        IDMAESTRO,
+        PERSPECTIVA,
+        IDOBJETIVO,
+        CODIGOOE,
+        NOMBRE_OE,
+        COUNT(*) AS TOTAL_ACCIONES,
+        COUNT(CASE WHEN ORIGEN = 'PLANIFICADA' THEN 1 END) AS ACC_PLAN,
+        COUNT(CASE WHEN ORIGEN = 'PLANIFICADA' AND PORCENTAJE > 0 THEN 1 END) AS ACC_PLAN_EVALUADAS,
+        COUNT(CASE WHEN ORIGEN = 'NO PLANIFICADA' THEN 1 END) AS ACC_NO_PLAN,
+        COUNT(CASE WHEN ORIGEN = 'NO PLANIFICADA' AND PORCENTAJE > 0 THEN 1 END) AS ACC_NO_PLAN_EVALUADAS,
+        COUNT(CASE WHEN PORCENTAJE > 0 THEN 1 END) AS ACC_EVALUADAS_TOTAL,
+        ROUND(AVG(CASE WHEN ORIGEN = 'PLANIFICADA' THEN PORCENTAJE END), 2) AS CUMPLI_PLAN,
+        ROUND(AVG(CASE WHEN ORIGEN = 'NO PLANIFICADA' THEN PORCENTAJE END), 2) AS CUMPLI_NO_PLAN,
+        ROUND(AVG(PORCENTAJE), 2) AS CUMPLI_TOTAL_OE
+    FROM BASE_JERARQUIA
+    GROUP BY IDMAESTRO, PERSPECTIVA, IDOBJETIVO, CODIGOOE, NOMBRE_OE
+),
+NIVEL_PERSPECTIVA AS (
+    SELECT
+        n.*,
+        ROUND(AVG(CUMPLI_TOTAL_OE) OVER (PARTITION BY IDMAESTRO), 2) AS CUMPLI_PERSPECTIVA_VAL
+    FROM NIVEL_OE n
+)
+SELECT
+    PERSPECTIVA,
+    CODIGOOE,
+    NOMBRE_OE,
+    TOTAL_ACCIONES,
+    ACC_PLAN,
+    ACC_PLAN_EVALUADAS,
+    ACC_NO_PLAN,
+    ACC_NO_PLAN_EVALUADAS,
+    ACC_EVALUADAS_TOTAL,
+    NVL(CUMPLI_PLAN, 0) AS CUMPLI_PLAN,
+    NVL(CUMPLI_NO_PLAN, 0) AS CUMPLI_NO_PLAN,
+    NVL(CUMPLI_TOTAL_OE, 0) AS CUMPLI_TOTAL_OE,
+    -- Cumplimiento de Perspectiva heredado del paso anterior
+    NVL(CUMPLI_PERSPECTIVA_VAL, 0) AS CUMPLI_PERSPECTIVA,
+    NVL(ROUND((SELECT AVG(CUMPLI_PERSPECTIVA_VAL)
+            FROM (SELECT DISTINCT IDMAESTRO, CUMPLI_PERSPECTIVA_VAL FROM NIVEL_PERSPECTIVA)), 2), 0) AS CUMPLI_GLOBAL_PAO
+FROM NIVEL_PERSPECTIVA
+ORDER BY PERSPECTIVA, CODIGOOE]]>
+	</queryString>
+	<field name="PERSPECTIVA" class="java.lang.String"/>
+	<field name="CODIGOOE" class="java.lang.String"/>
+	<field name="NOMBRE_OE" class="java.lang.String"/>
+	<field name="TOTAL_ACCIONES" class="java.math.BigDecimal"/>
+	<field name="ACC_PLAN" class="java.math.BigDecimal"/>
+	<field name="ACC_PLAN_EVALUADAS" class="java.math.BigDecimal"/>
+	<field name="ACC_NO_PLAN" class="java.math.BigDecimal"/>
+	<field name="ACC_NO_PLAN_EVALUADAS" class="java.math.BigDecimal"/>
+	<field name="ACC_EVALUADAS_TOTAL" class="java.math.BigDecimal"/>
+	<field name="CUMPLI_PLAN" class="java.math.BigDecimal"/>
+	<field name="CUMPLI_NO_PLAN" class="java.math.BigDecimal"/>
+	<field name="CUMPLI_TOTAL_OE" class="java.math.BigDecimal"/>
+	<field name="CUMPLI_PERSPECTIVA" class="java.math.BigDecimal"/>
+	<field name="CUMPLI_GLOBAL_PAO" class="java.math.BigDecimal"/>
+	<group name="grpPerspectiva">
+		<groupExpression><![CDATA[$F{PERSPECTIVA}]]></groupExpression>
+		<groupHeader>
+			<band height="25">
+				<textField>
+					<reportElement uuid="c32b7e5f-3ebd-4ad1-ac51-b18972414619" mode="Opaque" x="0" y="5" width="638" height="20" forecolor="#E2EFDA" backcolor="#375623"/>
+					<box leftPadding="5">
+						<pen lineWidth="0.5" lineColor="#1A5276"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+						<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA["PERSPECTIVA: " + $F{PERSPECTIVA}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00 %">
+					<reportElement uuid="d74c9c18-8976-4d92-be32-12688462e8ed" mode="Opaque" x="638" y="5" width="164" height="20" forecolor="#E2EFDA" backcolor="#375623"/>
+					<box rightPadding="5">
+						<pen lineWidth="0.5" lineColor="#1A5276"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+						<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{CUMPLI_PERSPECTIVA}.divide(new java.math.BigDecimal("100"))]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+	</group>
+	<title>
+		<band height="55" splitType="Stretch">
+			<staticText>
+				<reportElement uuid="3be64f61-ede3-451b-a657-a4862ceb2a32" x="0" y="0" width="802" height="25" forecolor="#2C3E50"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[REPORTE DE CUMPLIMIENTO PAO]]></text>
+			</staticText>
+			<textField pattern="#,##0.00 %">
+				<reportElement uuid="e84d5b1f-a63e-4283-81ae-4541d9a98411" mode="Opaque" x="638" y="30" width="164" height="20" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{CUMPLI_GLOBAL_PAO}.divide(new java.math.BigDecimal("100"))]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement uuid="1e22b532-2370-4f11-9878-f30d2317cf09" mode="Opaque" x="443" y="30" width="195" height="20" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[CUMPLIMIENTO GLOBAL:]]></text>
+			</staticText>
+			<textField>
+				<reportElement uuid="bf6dbbbd-d9cb-4f09-a0e7-1b01b69b6de7" x="659" y="0" width="43" height="25"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA["Fecha:"]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd MMMMM yyyy">
+				<reportElement uuid="35a3ae2e-a3eb-401b-b119-efba2ebbab6c" x="702" y="0" width="100" height="25"/>
+				<textElement verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<image>
+				<reportElement uuid="30fa9c4b-8715-4fc6-87c2-9689910c9241" x="0" y="0" width="64" height="50"/>
+				<imageExpression><![CDATA["C:\\Users\\ENVY360\\Desktop\\Manuel\\Desarrollo\\Fase2\\BankSys-web\\web\\resources\\images\\logocoop.jpg"]]></imageExpression>
+			</image>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="35" splitType="Stretch">
+			<staticText>
+				<reportElement uuid="1e22b532-2370-4f11-9878-f30d2317cf09" mode="Opaque" x="0" y="0" width="43" height="35" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[CÓDIGO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="1e22b532-2370-4f11-9878-f30d2317cf09" mode="Opaque" x="43" y="0" width="196" height="35" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[OBJETIVO ESTRATÉGICO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="1e22b532-2370-4f11-9878-f30d2317cf09" mode="Opaque" x="239" y="0" width="71" height="35" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[ACCIONES PLANIFICADAS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="1e22b532-2370-4f11-9878-f30d2317cf09" mode="Opaque" x="310" y="0" width="75" height="35" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[ACCIONES PLAN. EVALUADAS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="1e22b532-2370-4f11-9878-f30d2317cf09" mode="Opaque" x="385" y="0" width="90" height="35" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[CUMPLIMIENTO PLANIFICADAS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="1e22b532-2370-4f11-9878-f30d2317cf09" mode="Opaque" x="475" y="0" width="81" height="35" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[ACCIONES NO PLANIFICADAS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="1e22b532-2370-4f11-9878-f30d2317cf09" mode="Opaque" x="556" y="0" width="82" height="35" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[ACCIONES NO PLAN. EVALUADAS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="1e22b532-2370-4f11-9878-f30d2317cf09" mode="Opaque" x="638" y="0" width="93" height="35" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[CUMPLIMIENTO NO PLANIFICADAS]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="1e22b532-2370-4f11-9878-f30d2317cf09" mode="Opaque" x="731" y="0" width="71" height="35" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[CUMPLIMIENTO TOTAL]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="34" splitType="Stretch">
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="false">
+				<reportElement uuid="75e9941d-fab5-46f3-bb29-155c2b98ed6c" stretchType="RelativeToTallestObject" mode="Transparent" x="0" y="0" width="43" height="34" forecolor="#000000" backcolor="#FFFFFF"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{CODIGOOE}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="false">
+				<reportElement uuid="c637b9e4-54db-4ade-8ae5-ee9a20710dd0" stretchType="RelativeToTallestObject" mode="Transparent" x="43" y="0" width="196" height="34" forecolor="#000000" backcolor="#FFFFFF"/>
+				<box leftPadding="5">
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{NOMBRE_OE}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="false">
+				<reportElement uuid="b4671a7f-b6c1-467d-9f5d-fc1d6c90fd3e" stretchType="RelativeToTallestObject" mode="Transparent" x="239" y="0" width="71" height="34" forecolor="#000000" backcolor="#FFFFFF"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ACC_PLAN}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="false">
+				<reportElement uuid="24b78882-7417-4a60-b016-652ce13d5caf" stretchType="RelativeToTallestObject" mode="Transparent" x="310" y="0" width="75" height="34" forecolor="#000000" backcolor="#FFFFFF"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ACC_PLAN_EVALUADAS}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="false">
+				<reportElement uuid="cfc4db1d-7459-4bac-b94d-38916e2bf430" stretchType="RelativeToTallestObject" mode="Transparent" x="385" y="0" width="90" height="34" forecolor="#000000" backcolor="#FFFFFF"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{CUMPLI_PLAN}.toString() + "%"]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="false">
+				<reportElement uuid="e3f81da7-604b-4793-9951-1e6853b72a3b" stretchType="RelativeToTallestObject" mode="Transparent" x="475" y="0" width="81" height="34" forecolor="#000000" backcolor="#FFFFFF"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ACC_NO_PLAN}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="false">
+				<reportElement uuid="3ae21ceb-21de-46b6-9ead-b89e63d11e18" stretchType="RelativeToTallestObject" mode="Transparent" x="556" y="0" width="82" height="34" forecolor="#000000" backcolor="#FFFFFF"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="false" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ACC_NO_PLAN_EVALUADAS}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="false">
+				<reportElement uuid="f553c506-62c6-46d3-8bcd-aa066ddb97a1" stretchType="RelativeToTallestObject" mode="Transparent" x="638" y="0" width="93" height="34" forecolor="#000000" backcolor="#FFFFFF"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{CUMPLI_NO_PLAN}.toString() + "%"]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="false">
+				<reportElement uuid="34641f30-7dbc-41c5-b641-0818dc449784" stretchType="RelativeToTallestObject" mode="Opaque" x="731" y="0" width="71" height="34" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#CCCCCC"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="8" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{CUMPLI_TOTAL_OE}.toString() + "%"]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="264">
+			<subreport>
+				<reportElement uuid="2165ad20-b56c-41b5-9547-5d7511196032" positionType="Float" x="0" y="10" width="802" height="113"/>
+				<subreportParameter name="idPaoSeleccionado">
+					<subreportParameterExpression><![CDATA[$P{idPaoSeleccionado}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA["SubRptPAO.jasper"]]></subreportExpression>
+			</subreport>
+			<subreport>
+				<reportElement uuid="e7516c59-bd9a-410d-bf1f-2b8a9be890ff" positionType="Float" x="0" y="133" width="802" height="130"/>
+				<subreportParameter name="idPaoSeleccionado">
+					<subreportParameterExpression><![CDATA[$P{idPaoSeleccionado}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA["rptAccionesNoPlan.jasper"]]></subreportExpression>
+			</subreport>
+		</band>
+	</summary>
+</jasperReport>

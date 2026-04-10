@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rptPlaneacionPEP" language="groovy" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="aaaa0000-0000-0000-0000-000000000000">
+	<property name="ireport.zoom" value="1.771561000000072"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="idPepSeleccionado" class="java.lang.Integer"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["C:\\Users\\ENVY360\\Desktop\\Manuel\\Desarrollo\\Fase2\\BankSys-web\\web\\resources\\images\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="lineaAnio" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT
+    pe.IDPEP, pe.DESCRIP AS NOMBRE_PEP, pe.ANIOINI AS ANIO_INICIO, pe.ANIOFIN AS ANIO_FIN,
+    m.NOMBRE AS PERSPECTIVA,
+    oe.CODIGOOE AS COD_OBJETIVO, oe.DESCRIP AS OBJETIVO_ESTRATEGICO,
+    ind.CODIGOINDICADOR AS COD_INDICADOR, ind.DESCRIP AS INDICADOR_CUMPLIMIENTO,
+    le.IDESTRATEGIA, le.DESCRIP AS LINEA_ESTRATEGICA, le.ANIO AS ANIO_ESTRATEGIA
+FROM PLNPEP pe
+JOIN PLNPERSPECTIVADETA pd ON pe.IDPEP = pd.IDPEP
+JOIN PLNPERSPECTIVA m ON pd.IDMAESTRO = m.IDMAESTRO
+LEFT JOIN PLNPEPOBJETIVO oe ON pd.IDPERSPECTIVA = oe.IDPERSPECTIVA
+LEFT JOIN PLNPEPINDICUMPL ind ON oe.IDOBJETIVO = ind.IDOBJETIVO
+LEFT JOIN PLNPEPLINESTR le ON ind.IDINDICADORCUMP = le.IDINDICADORCUMP
+WHERE pe.IDPEP = $P{idPepSeleccionado}
+  AND ($P{lineaAnio} IS NULL OR le.ANIO = $P{lineaAnio})
+ORDER BY pe.IDPEP, m.NOMBRE, oe.CODIGOOE, ind.CODIGOINDICADOR, le.IDESTRATEGIA]]>
+	</queryString>
+	<field name="IDPEP" class="java.math.BigDecimal"/>
+	<field name="NOMBRE_PEP" class="java.lang.String"/>
+	<field name="ANIO_INICIO" class="java.math.BigDecimal"/>
+	<field name="ANIO_FIN" class="java.math.BigDecimal"/>
+	<field name="PERSPECTIVA" class="java.lang.String"/>
+	<field name="COD_OBJETIVO" class="java.lang.String"/>
+	<field name="OBJETIVO_ESTRATEGICO" class="java.lang.String"/>
+	<field name="COD_INDICADOR" class="java.lang.String"/>
+	<field name="INDICADOR_CUMPLIMIENTO" class="java.lang.String"/>
+	<field name="IDESTRATEGIA" class="java.math.BigDecimal"/>
+	<field name="LINEA_ESTRATEGICA" class="java.lang.String"/>
+	<field name="ANIO_ESTRATEGIA" class="java.math.BigDecimal"/>
+	<group name="grpPerspectiva">
+		<groupExpression><![CDATA[$F{PERSPECTIVA}]]></groupExpression>
+	</group>
+	<group name="grpObjetivo">
+		<groupExpression><![CDATA[$F{OBJETIVO_ESTRATEGICO}]]></groupExpression>
+	</group>
+	<group name="grpIndicador">
+		<groupExpression><![CDATA[$F{INDICADOR_CUMPLIMIENTO}]]></groupExpression>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="180" splitType="Stretch">
+			<textField>
+				<reportElement uuid="aaaa0000-0000-0000-0000-000000000001" x="0" y="20" width="465" height="20"/>
+				<box leftPadding="5" rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#375623"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{NOMBRE_PEP}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="aaaa0000-0000-0000-0000-000000000002" x="465" y="20" width="100" height="20"/>
+				<box leftPadding="5" rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#375623"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{ANIO_INICIO}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="aaaa0000-0000-0000-0000-000000000003" x="565" y="20" width="100" height="20"/>
+				<box leftPadding="5" rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#375623"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{ANIO_FIN}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement uuid="aaaa0000-0000-0000-0000-000000000004" mode="Opaque" x="0" y="0" width="465" height="20" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box leftPadding="5" rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#375623"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[NOMBRE PEP]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="aaaa0000-0000-0000-0000-000000000005" mode="Opaque" x="465" y="0" width="200" height="20" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box leftPadding="5" rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#375623"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[VIGENCIA]]></text>
+			</staticText>
+			<image hAlign="Center" vAlign="Middle">
+				<reportElement uuid="aaaa0000-0000-0000-0000-000000000006" x="665" y="0" width="137" height="40"/>
+				<imageExpression><![CDATA[$P{SUBREPORT_DIR} + "logocoop.jpg"]]></imageExpression>
+			</image>
+			<subreport>
+				<reportElement uuid="aaaa0000-0000-0000-0000-000000000007" x="0" y="69" width="802" height="100"/>
+				<subreportParameter name="idPepSeleccionado">
+					<subreportParameterExpression><![CDATA[$P{idPepSeleccionado}]]></subreportParameterExpression>
+				</subreportParameter>
+				<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+				<subreportExpression><![CDATA["SubRptPep.jasper"]]></subreportExpression>
+			</subreport>
+			<staticText>
+				<reportElement uuid="aaaa0000-0000-0000-0000-000000000008" mode="Opaque" x="0" y="49" width="802" height="20" forecolor="#E2EFDA" backcolor="#375623"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#375623"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[ESTADISTICAS DEL PEP]]></text>
+			</staticText>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="50" splitType="Stretch">
+			<staticText>
+				<reportElement uuid="bbbb0000-0000-0000-0000-000000000001" mode="Opaque" x="0" y="0" width="802" height="20" forecolor="#E2EFDA" backcolor="#375623"/>
+				<box>
+					<pen lineWidth="0.5" lineColor="#375623"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[DETALLES DEL PEP]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="bbbb0000-0000-0000-0000-000000000002" mode="Opaque" x="0" y="20" width="120" height="30" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box leftPadding="5" rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#375623"/>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[PERSPECTIVA:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="bbbb0000-0000-0000-0000-000000000003" mode="Opaque" x="120" y="20" width="221" height="30" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box leftPadding="5" rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#375623"/>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[OE:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="bbbb0000-0000-0000-0000-000000000004" mode="Opaque" x="341" y="20" width="234" height="30" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box leftPadding="5" rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#375623"/>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[INDICADOR DE CUMPLIMIENTO:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="bbbb0000-0000-0000-0000-000000000005" mode="Opaque" x="575" y="20" width="162" height="30" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box leftPadding="5" rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#375623"/>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[LÍNEA ESTRATÉGICA:]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="bbbb0000-0000-0000-0000-000000000006" mode="Opaque" x="737" y="20" width="65" height="30" forecolor="#375623" backcolor="#E2EFDA"/>
+				<box leftPadding="5" rightPadding="5">
+					<pen lineWidth="0.5" lineColor="#375623"/>
+					<bottomPen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font isBold="true"/>
+				</textElement>
+				<text><![CDATA[AÑO:]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<detail>
+		<band height="45" splitType="Prevent">
+			<line>
+				<reportElement uuid="cccc0000-0000-0000-0000-000000000001" x="0" y="0" width="802" height="1" forecolor="#375623">
+					<printWhenExpression><![CDATA[$V{grpPerspectiva_COUNT} == 1]]></printWhenExpression>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="cccc0000-0000-0000-0000-000000000002" x="120" y="0" width="682" height="1" forecolor="#375623">
+					<printWhenExpression><![CDATA[$V{grpObjetivo_COUNT} == 1 && $V{grpPerspectiva_COUNT} != 1]]></printWhenExpression>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="cccc0000-0000-0000-0000-000000000003" x="341" y="0" width="461" height="1" forecolor="#375623">
+					<printWhenExpression><![CDATA[$V{grpIndicador_COUNT} == 1 && $V{grpObjetivo_COUNT} != 1]]></printWhenExpression>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="cccc0000-0000-0000-0000-000000000004" x="575" y="0" width="227" height="1" forecolor="#375623">
+					<printWhenExpression><![CDATA[$V{grpIndicador_COUNT} != 1]]></printWhenExpression>
+				</reportElement>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="dddd0000-0000-0000-0000-000000000001" stretchType="RelativeToBandHeight" x="0" y="0" width="1" height="45" forecolor="#375623"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="dddd0000-0000-0000-0000-000000000002" stretchType="RelativeToBandHeight" x="120" y="0" width="1" height="45" forecolor="#375623"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="dddd0000-0000-0000-0000-000000000003" stretchType="RelativeToBandHeight" x="341" y="0" width="1" height="45" forecolor="#375623"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="dddd0000-0000-0000-0000-000000000004" stretchType="RelativeToBandHeight" x="575" y="0" width="1" height="45" forecolor="#375623"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="dddd0000-0000-0000-0000-000000000005" stretchType="RelativeToBandHeight" x="737" y="0" width="1" height="45" forecolor="#375623"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<line>
+				<reportElement uuid="dddd0000-0000-0000-0000-000000000006" stretchType="RelativeToBandHeight" x="801" y="0" width="1" height="45" forecolor="#375623"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="eeee0000-0000-0000-0000-000000000001" stretchType="RelativeToBandHeight" isPrintRepeatedValues="false" x="0" y="0" width="120" height="45" isPrintInFirstWholeBand="true"/>
+				<box topPadding="5" leftPadding="5" bottomPadding="5" rightPadding="5">
+					<pen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{PERSPECTIVA}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="eeee0000-0000-0000-0000-000000000002" stretchType="RelativeToBandHeight" isPrintRepeatedValues="false" x="120" y="0" width="45" height="45" isPrintInFirstWholeBand="true"/>
+				<box topPadding="5" leftPadding="5" bottomPadding="5" rightPadding="5">
+					<pen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{COD_OBJETIVO}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="eeee0000-0000-0000-0000-000000000003" stretchType="RelativeToBandHeight" isPrintRepeatedValues="false" x="165" y="0" width="176" height="45" isPrintInFirstWholeBand="true"/>
+				<box topPadding="5" leftPadding="5" bottomPadding="5" rightPadding="5">
+					<pen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Top"/>
+				<textFieldExpression><![CDATA[$F{OBJETIVO_ESTRATEGICO}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="eeee0000-0000-0000-0000-000000000004" stretchType="RelativeToBandHeight" isPrintRepeatedValues="false" x="341" y="0" width="35" height="45" isPrintInFirstWholeBand="true"/>
+				<box topPadding="5" leftPadding="5" bottomPadding="5" rightPadding="5">
+					<pen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{COD_INDICADOR}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="eeee0000-0000-0000-0000-000000000005" stretchType="RelativeToBandHeight" isPrintRepeatedValues="false" x="376" y="0" width="199" height="45" isPrintInFirstWholeBand="true"/>
+				<box topPadding="5" leftPadding="5" bottomPadding="5" rightPadding="5">
+					<pen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Top"/>
+				<textFieldExpression><![CDATA[$F{INDICADOR_CUMPLIMIENTO}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="eeee0000-0000-0000-0000-000000000006" stretchType="RelativeToBandHeight" x="575" y="0" width="162" height="45"/>
+				<box topPadding="5" leftPadding="5" bottomPadding="5" rightPadding="5">
+					<pen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{LINEA_ESTRATEGICA}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement uuid="eeee0000-0000-0000-0000-000000000007" stretchType="RelativeToBandHeight" x="737" y="0" width="65" height="45"/>
+				<box topPadding="5" leftPadding="5" bottomPadding="5" rightPadding="5">
+					<pen lineWidth="0.0"/>
+				</box>
+				<textElement textAlignment="Center" verticalAlignment="Middle"/>
+				<textFieldExpression><![CDATA[$F{ANIO_ESTRATEGIA}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<summary>
+		<band height="1">
+			<line>
+				<reportElement uuid="ffff0000-0000-0000-0000-000000000001" x="0" y="0" width="802" height="1" forecolor="#375623"/>
+				<graphicElement>
+					<pen lineWidth="0.5"/>
+				</graphicElement>
+			</line>
+		</band>
+	</summary>
+</jasperReport>

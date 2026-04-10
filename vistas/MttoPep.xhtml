@@ -1,0 +1,941 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!DOCTYPE composition PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<ui:composition xmlns:ui="http://java.sun.com/jsf/facelets"
+                xmlns:f="http://java.sun.com/jsf/core"
+                xmlns:h="http://java.sun.com/jsf/html"
+                xmlns="http://www.w3.org/1999/xhtml"
+                xmlns:ice="http://www.icesoft.com/icefaces/component"
+                xmlns:ace="http://www.icefaces.org/icefaces/components">
+
+    <f:view contentType="text/html">
+        <h:outputScript library="js" name="validaciones_web.js" target="body"/>
+
+        <!-- =============== -->
+        <!-- NOMBRE PANTALLA -->
+        <!-- =============== -->
+        <ice:panelGrid width="100%">
+            <h:outputLabel value="PEP" styleClass="title" style="font-size: 16px; font-weight: bold;"/>
+        </ice:panelGrid>
+
+        <ace:dialog id="dialog" header="Mensajes del Sistema" widgetVar="mensaje"
+                    modal="true" closable="true" draggable="true"
+                    showEffect="slide" hideEffect="slide" dialogPosition="middle" width="350" resizable="false">
+            <h:form id="msgForm">
+                <ace:messages id="allMsgsys" showDetail="true" showSummary="false" escape="false"/>
+                <center>
+                    <h:commandButton value="Aceptar" onclick="mensaje.hide();
+                            return false;" 
+                                     type="button" 
+                                     style="background-color: #5c9ccc; color: white; border: none; padding: 5px 15px; font-weight: bold; cursor: pointer;"/>
+                </center>
+            </h:form>
+        </ace:dialog>
+
+        <h:form id="frmMttoPep">
+            <ace:tabSet id="tbPep" selectedIndex="#{mttoPep.cambiarTagPanel}">
+
+                <!-- =========================== -->
+                <!-- TAB PANE DE BUSQUEDA DE PEP -->
+                <!-- =========================== -->
+                <ace:tabPane id="tbBsqPep" label="BÚSQUEDA">
+                    <ice:panelGrid styleClass="centeredPanelGrid" width="100%">
+
+                        <ice:panelGrid styleClass="centeredPanelGrid" width="100%">
+                            <ace:menuBar id="mbBsqPep">
+                                <ace:menuItem id="miBsqPep" icon="ui-icon ui-icon-search" action="#{mttoPep.buscarPeps()}" value="Buscar"/>
+                                <ace:menuItem id="miLimpiarPep" icon="ui-icon ui-icon-refresh" action="#{mttoPep.limpiarBusqueda()}" value="Limpiar"/>
+                            </ace:menuBar>
+                        </ice:panelGrid>
+
+                        <ice:panelGrid styleClass="centeredPanelGrid" width="80%" columns="4" cellpadding="5px" style="margin-top: 10px;">
+                            <ice:outputLabel value="Año Inicio:" for="txtBusqAnio" style="font-weight:bold"/>
+                            <ace:maskedEntry id="txtBusqAnio" value="#{mttoPep.busqAnio}"   mask="9999" style="width: 100px;" onkeypress="return soloNumero(event);">
+                                <f:validateLongRange minimum="1000" maximum="9999" />
+                            </ace:maskedEntry>
+
+
+
+                            <ice:outputLabel value="Estado:" for="somBusqEstado" style="font-weight:bold"/>
+
+                            <ace:simpleSelectOneMenu id="somBusqEstado" value="#{mttoPep.busqEstado}" style="width: 150px;">
+                                <f:selectItem itemLabel="--- Todos ---" itemValue="#{2}"/> 
+                                <f:selectItem itemLabel="Activo" itemValue="#{1}"/>
+                                <f:selectItem itemLabel="Inactivo" itemValue="#{0}"/>
+
+                            </ace:simpleSelectOneMenu>
+
+                        </ice:panelGrid>
+
+                        <div style="height: 10px;"></div>
+
+                        <!-- ============= -->
+                        <!-- TABLA DE PEP  -->
+                        <!-- ============= -->
+                        <ice:panelGrid width="100%">
+                            <ice:outputLabel value="LISTA DE RESULTADOS" style="font-weight: bold; color: black"/>
+                        </ice:panelGrid>
+                        <ace:dataTable id="dtPeps" value="#{mttoPep.lstPeps}" var="item"
+                                       paginator="true" paginatorPosition="bottom" rows="10"
+                                       selectionMode="single" stateMap="#{mttoPep.smPep}"
+                                       rowSelectListener="#{mttoPep.llenarPepSelect()}">
+                            <ace:ajax event="select" render="@form" />
+
+                            <ace:column headerText="Descripción">
+                                <h:outputText value="#{item.descrip}"/>
+                            </ace:column>
+                            <ace:column headerText="Vigencia" style="text-align: center;">
+                                <h:outputText value="#{item.anioini} - #{item.aniofin}"/>
+                            </ace:column>
+                            <ace:column headerText="Estado" style="text-align: center;">
+                                <h:outputText value="#{item.estado == 1 ? 'Activo' : 'Inactivo'}" 
+                                              style="color: #{item.estado == 1 ? 'green' : 'red'}; font-weight: bold;"/>
+                            </ace:column>
+                        </ace:dataTable>
+                    </ice:panelGrid> 
+                </ace:tabPane>
+
+                <!-- =============================================== -->
+                <!-- TAB SET DE DETALLES, VES TODO LO ASOCIADO A PEP -->
+                <!-- =============================================== -->
+                <ace:tabPane id="tbDetallePep" label="DETALLE DEL PEP">
+                    <ice:panelGrid styleClass="centeredPanelGrid" width="100%" >
+
+                        <!-- ========================== -->
+                        <!-- CAMPOS EDITAR O CREAR PEP  -->
+                        <!-- ========================== -->
+
+                        <ice:panelGrid styleClass="panel-grid-header" columns="1" width="100%" >
+                            <ice:panelGrid styleClass="centeredPanelGrid" width="100%" columns="1" 
+                                           style="background-color: #5c9ccc; padding: 5px; ">
+                                <ice:outputLabel value="DATOS GENERALES DEL PLAN ESTRATÉGICO PARTICIPATIVO" 
+                                                 style="font-weight: bold; color: white;"/>
+                            </ice:panelGrid>
+
+                            <ice:panelGrid styleClass="centeredPanelGrid" width="100%">
+                                <ace:menuBar id="mbDetallePep">
+                                    <ace:menuItem id="miNuevoPep" icon="ui-icon ui-icon-document" action="#{mttoPep.nuevoPep()}" rendered="#{mttoPep.pep.idpep != null}" value="Nuevo PEP"/>
+
+                                    <ace:menuItem id="miGuardar" icon="ui-icon ui-icon-disk" value="Guardar PEP" 
+                                                  action="#{mttoPep.guardarPep()}" disabled="#{mttoPep.pepBloqueado}"/>
+                                    <ace:menuItem id="miEliminar" 
+                                                  icon="ui-icon ui-icon-trash" 
+                                                  value="Eliminar" 
+                                                  disabled="#{mttoPep.pepBloqueado}"
+                                                  rendered="#{mttoPep.pep.idpep != null}" 
+                                                  action="#{mttoPep.prepararEliminarGenerico(mttoPep.pep, 5)}">
+                                        <ace:ajax execute="@this" rendered=":popupConfirmacionGeneral :msgForm"/>
+                                    </ace:menuItem>
+                                    <ace:menuItem id="miAprobar"
+                                                  value="Aprobar PEP"
+                                                  icon="ui-icon ui-icon-script"
+                                                  rendered="#{mttoPep.pep.idpep != null}"
+                                                  actionListener="#{mttoPep.prepararAprobacionPep(mttoPep.pep)}"> <ace:ajax execute="@this" render=":popupAprobarPepForm"/>
+                                    </ace:menuItem>
+
+                                    <ace:menuItem value="Imprimir Reporte"
+                                                  icon="ui-icon ui-icon-print"
+                                                  action="#{mttoPep.imprimirResumenPep}"
+                                                  rendered="#{mttoPep.pep.idpep != null}">
+                                        <ace:ajax execute="@this" render=":msgForm"/>
+                                    </ace:menuItem>
+
+                                    <ace:menuItem id="miCancelar" icon="ui-icon ui-icon-arrowreturnthick-1-w" value="Cancelar / Regresar" action="#{mttoPep.cancelarPep()}"/>
+                                </ace:menuBar>
+                            </ice:panelGrid>
+
+
+                            <ice:panelGrid styleClass="centeredPanelGrid" width="100%" columns="6" cellpadding="10px">
+                                <ice:outputLabel value="Descripción:" style="font-weight:bold"/>
+                                <ace:textAreaEntry value="#{mttoPep.pep.descrip}" rows="3" cols="60" maxlength="300" resizable="false" />
+                                <ice:outputLabel value="Año de Inicio:" style="font-weight:bold"/>
+                                <ace:maskedEntry value="#{mttoPep.pep.anioini}" mask="9999" style="width: 80px"/>
+                                <ice:outputLabel value="Año de Fin:" style="font-weight:bold"/>
+                                <ace:maskedEntry value="#{mttoPep.pep.aniofin}" mask="9999" style="width: 80px"/>
+                                <ice:outputLabel value="Estado:" style="font-weight:bold"/>
+                                <ace:simpleSelectOneMenu value="#{mttoPep.pep.estado}" style="width: 150px;">
+                                    <f:selectItem itemLabel="Activo" itemValue="1"/>
+                                    <f:selectItem itemLabel="Inactivo" itemValue="0"/>
+                                </ace:simpleSelectOneMenu>
+
+                                <ice:panelGrid styleClass="centeredPanelGrid" width="100%" columns="1" rendered="#{mttoPep.pep.idpep != null}" >
+                                    <ice:outputLabel value="Año de las lineas estratégicas:" style="font-weight:bold"/>
+                                </ice:panelGrid>
+
+                                <ice:panelGrid styleClass="centeredPanelGrid" width="100%" columns="3" rendered="#{mttoPep.pep.idpep != null}" >
+
+                                    <ace:maskedEntry id="txtFiltroAnioEst"
+                                                     value="#{mttoPep.filtroAnioEstrategia}"
+                                                     mask="9999"
+                                                     style="width: 80px; margin-right: 5px;"
+                                                     title="Ingrese un año para filtrar las líneas estratégicas"/>
+
+                                    <ace:pushButton value="Filtrar"  action="#{mttoPep.filtrarEstrategiasPorAnio()}">
+                                        <f:ajax execute="txtFiltroAnioEst" render="@form"/>
+                                    </ace:pushButton>
+                                    <ace:pushButton value="Ver Todas"
+                                                    action="#{mttoPep.limpiarFiltroAnioEstrategia()}">
+                                        <f:ajax execute="@this" render="@form"/>
+                                    </ace:pushButton>
+                                </ice:panelGrid>
+                            </ice:panelGrid>
+                        </ice:panelGrid>
+
+                        <div style="height: 20px;"></div>
+
+                        <!-- ================= -->
+                        <!-- TABLA PERSPECTIVA -->
+                        <!-- ================= -->
+                        <ice:panelGroup rendered="#{mttoPep.pep.idpep != null}">
+                            <ice:panelGrid styleClass="panel-grid-header" columns="1" width="100%">
+                                <ice:panelGrid styleClass="centeredPanelGrid" width="100%" columns="2" 
+                                               style="background-color: #5c9ccc; color: white; padding: 5px;">
+                                    <span class="badge-codigo badge-paso">Paso 1 de 4</span>
+                                    <ice:outputLabel value="Asignación de perspectivas al PEP" style="font-weight: bold; color: white; "/>
+                                </ice:panelGrid>
+                                <ice:panelGrid columns="4" styleClass="centeredPanelGrid" cellpadding="5" width="100%">
+                                    <ice:outputLabel value="Perspectiva:" style="font-weight:bold"/>
+
+                                    <ace:simpleSelectOneMenu value="#{mttoPep.idMaestroSeleccionado}" style="width: 250px;">
+                                        <f:selectItem itemLabel="-- Seleccione --" itemValue="" noSelectionOption="true"/>
+                                        <f:selectItems value="#{mttoPep.comboCatPerspectivas}"/>
+                                    </ace:simpleSelectOneMenu>
+
+                                    <ace:pushButton value="Asignar al Plan" action="#{mttoPep.agregarPerspectivaAlPlan()}" disabled="#{mttoPep.pepBloqueado}"/>
+
+                                    <ace:pushButton action="#{mttoPep.abrirPopupCatalogo()}" value="Administrar Perspectivas"/>
+                                </ice:panelGrid>
+                                <ace:dataTable id="dtPerspectivas" value="#{mttoPep.lstPerspectivasAsignadas}" var="per"
+                                               selectionMode="single" stateMap="#{mttoPep.smPerspectiva}"
+                                               rowSelectListener="#{mttoPep.seleccionarPerspectiva}"> <ace:ajax event="select" render="@form" />
+                                    <ace:column headerText="Perspectiva Asignada">
+                                        <h:outputText value="#{per.perspectivaMaestra.nombre}" style="font-weight: bold;"/>
+                                    </ace:column>
+                                    <ace:column headerText="Eliminar" style="text-align: center; width: 50px;">
+                                        <h:commandButton action="#{mttoPep.prepararEliminarGenerico(per, 1)}"
+                                                         image="/resources/images/iconRemove.png"
+                                                         disabled="#{mttoPep.pepBloqueado}"
+                                                         style="width: 16px; height: 16px"
+                                                         title="Quitar del PEP"> <f:ajax execute="@this" render=":popupConfirmacionGeneral :msgForm" />
+
+                                        </h:commandButton>
+
+                                    </ace:column>
+                                </ace:dataTable>
+                            </ice:panelGrid>
+
+                            <div style="height: 20px;"></div>
+
+                            <!-- ============================ -->
+                            <!-- TABLA OBJETIVOS ESTRATEGICOS -->
+                            <!-- ============================ -->
+                            <ice:panelGroup rendered="#{mttoPep.perspectivaSeleccionada != null}">
+
+                                <ice:panelGrid styleClass="panel-grid-header" columns="1" width="100%">
+                                    <ice:panelGrid styleClass="centeredPanelGrid" width="100%" columns="2" 
+                                                   style="background-color: #5c9ccc; color: white; padding: 5px;">
+                                        <span class="badge-codigo badge-paso">Paso 2 de 4</span>
+                                        <ice:outputLabel value="OBJETIVOS ESTRATÉGICOS DE: #{mttoPep.perspectivaSeleccionada.nombre}" 
+                                                         style="font-weight: bold; color: white;"/>
+                                    </ice:panelGrid>
+                                    <ice:panelGrid columns="2" styleClass="centeredPanelGrid" width="100%" style="text-align: right;">
+
+                                        <ice:commandButton title="Nuevo Objetivo Estratégico" 
+                                                           action="#{mttoPep.abrirPopupObjetivo()}" 
+                                                           style="width: 20px; height: 20px" 
+                                                           image="/resources/images/iconsAdd.png"/>
+                                    </ice:panelGrid>
+                                    <ace:dataTable id="dtObjetivos" value="#{mttoPep.lstObjetivos}" var="obj" 
+                                                   paginator="true" rows="5" paginatorPosition="bottom"
+                                                   selectionMode="single" stateMap="#{mttoPep.smObjetivo}"
+                                                   rowSelectListener="#{mttoPep.seleccionarObjetivo}"> 
+                                        <ace:ajax event="select" render="@form" />
+                                        <ace:column headerText="Código OE" style="width:80px">
+                                            <h:outputText value="#{obj.codigooe}" style="font-weight:bold"/>
+                                        </ace:column>
+                                        <ace:column headerText="Descripción">
+                                            <h:outputText value="#{obj.descrip}"/>
+                                        </ace:column>
+                                        <ace:column headerText="Estado" style="text-align: center;">
+                                            <h:outputText value="#{obj.estado == 1 ? 'Activo' : 'Inactivo'}"
+                                                          style="color: #{obj.estado == 1 ? 'green' : 'red'}; font-weight: bold;"/>
+                                        </ace:column>
+                                        <ace:column headerText="Editar" style="width: 50px; text-align: center;">
+                                            <h:commandButton action="#{mttoPep.prepararEdicionObjetivo(obj)}"
+                                                             image="/resources/images/lapiz.png"
+                                                             style="width: 16px; height: 16px"
+                                                             title="Editar OE">
+                                                <ace:ajax execute="@this"  render="@all"  onComplete="popupObjetivo.show();"/>
+                                            </h:commandButton>
+                                        </ace:column>
+                                        <ace:column headerText="Eliminar" style="width: 50px; text-align: center;">
+                                            <h:commandButton action="#{mttoPep.prepararEliminarGenerico(obj, 2)}"
+                                                             disabled="#{mttoPep.pepBloqueado}"
+                                                             image="/resources/images/iconRemove.png"
+                                                             style="width: 16px; height: 16px"
+                                                             title="Eliminar OE">
+                                                <f:ajax execute="@this" render=":popupConfirmacionGeneral :msgForm"/>                                        
+                                            </h:commandButton>
+                                        </ace:column>
+
+
+                                    </ace:dataTable>
+                                </ice:panelGrid>
+
+                            </ice:panelGroup>
+
+
+                            <div style="height: 20px;"></div>
+
+
+                            <!-- ================================= -->
+                            <!-- TABLA INDICADORES DE CUMPLIMIENTO -->
+                            <!-- ================================= -->
+                            <ice:panelGroup rendered="#{mttoPep.objetivoSeleccionado != null}">
+                                <ice:panelGrid styleClass="panel-grid-header" columns="1" width="100%">
+                                    <ice:panelGrid styleClass="centeredPanelGrid" width="100%" columns="2" 
+                                                   style="background-color: #5c9ccc; color: white; padding: 5px;">
+                                        <span class="badge-codigo badge-paso">Paso 3 de 4</span>
+                                        <ice:outputLabel value="INDICADORES DE CUMPLIMIENTO PARA: #{mttoPep.objetivoSeleccionado.codigooe}" 
+                                                         style="font-weight: bold; color: white;"/>
+                                    </ice:panelGrid>
+
+                                    <ice:panelGrid columns="1" styleClass="centeredPanelGrid" width="100%" style="text-align: right;">
+                                        <ice:commandButton title="Nuevo Indicador de Cumplimiento" 
+                                                           action="#{mttoPep.abrirPopupIndicador()}" 
+                                                           style="width: 20px; height: 20px" 
+                                                           image="/resources/images/iconsAdd.png"/>
+                                    </ice:panelGrid>
+
+                                    <ace:dataTable id="dtIndicadores" value="#{mttoPep.lstIndicadores}" var="ind" 
+                                                   paginator="true" rows="5" paginatorPosition="bottom"
+                                                   selectionMode="single" stateMap="#{mttoPep.smIndicador}" 
+                                                   rowSelectListener="#{mttoPep.seleccionarIndicador}"> 
+                                        <ace:ajax event="select" render="@form" />
+                                        <ace:column headerText="Código" style="width: 80px; text-align: center;">
+                                            <h:outputText value="#{ind.codigoindicador}" style="font-weight:bold"/>
+                                        </ace:column>
+                                        <ace:column headerText="Indicador de Cumplimiento">
+                                            <h:outputText value="#{ind.descrip}"/>
+                                        </ace:column>
+                                        <ace:column headerText="Editar" style="width: 50px; text-align: center;">
+                                            <h:commandButton action="#{mttoPep.prepararEdicionIndicador(ind)}" 
+                                                             image="/resources/images/lapiz.png"
+                                                             style="width: 16px; height: 16px"
+                                                             title="Editar Indicador">
+                                                <ace:ajax execute="@this" render="@all" onComplete="popupIndicador.show();"/>
+                                            </h:commandButton> 
+
+                                        </ace:column>
+
+                                        <ace:column headerText="Eliminar" style="width: 50px; text-align: center;">
+                                            <h:commandButton action="#{mttoPep.prepararEliminarGenerico(ind, 3)}" 
+                                                             disabled="#{mttoPep.pepBloqueado}"
+                                                             image="/resources/images/iconRemove.png"
+                                                             style="width: 16px; height: 16px"
+                                                             title="Eliminar Indicador">
+                                                <f:ajax execute="@this" render=":popupConfirmacionGeneral :msgForm"/>                                        
+                                            </h:commandButton>
+
+
+                                        </ace:column>
+
+                                    </ace:dataTable>
+                                </ice:panelGrid>
+                            </ice:panelGroup>
+
+                            <div style="height: 20px;"></div>
+
+                            <!-- ========================= -->
+                            <!-- TABLA LINEAS ESTRATEGICAS -->
+                            <!-- ========================= -->
+                            <ice:panelGroup rendered="#{mttoPep.indicadorSeleccionado != null}">
+                                <ice:panelGrid styleClass="panel-grid-header" columns="1" width="100%">
+                                    <ice:panelGrid styleClass="centerPanelGrid" width="100%" columns="2"
+                                                   style="background-color: #5c9ccc; color: white; padding: 5px;">
+                                        <span class="badge-codigo badge-paso">Paso 4 de 4</span>
+                                        <h:panelGroup>
+                                            <ice:outputLabel value="LÍNEAS ESTRATÉGICAS DE: #{mttoPep.indicadorSeleccionado.codigoindicador}"
+                                                             style="font-weight: bold; color: white; text-align: center"/>
+
+                                            <!-- ✅ gt en lugar de >   ✅ mttoPep (no mttoPeo) -->
+                                            <h:outputText value=" [AÑO: #{mttoPep.filtroAnioEstrategia}]"
+                                                          rendered="#{mttoPep.filtroAnioEstrategia != null and mttoPep.filtroAnioEstrategia gt 0}"
+                                                          style="color: #ffe082; font-size: 11px; font-weight: bold; margin-left: 8px;"/>
+
+                                            <!-- ✅ le en lugar de <=   ✅ mttoPep (no mttoPeo) -->
+                                            <h:outputText value=" [TODAS LAS LÍNEAS]"
+                                                          rendered="#{mttoPep.filtroAnioEstrategia == null or mttoPep.filtroAnioEstrategia le 0}"
+                                                          style="color: #b2dfdb; font-size: 11px; margin-left: 8px;"/>
+                                        </h:panelGroup>
+                                    </ice:panelGrid>
+
+                                    <!-- Cabecera de líneas estratégicas — reemplazar las dos h:outputText con rendered -->
+
+
+
+                                    <ice:panelGrid columns="1" styleClass="centeredPanelGrid" width="100%" style="text-align: right;">
+                                        <ice:commandButton title="Nueva Línea Estrategia" 
+                                                           action="#{mttoPep.abrirPopupEstrategia()}" 
+                                                           style="width: 20px; height: 20px" 
+                                                           image="/resources/images/iconsAdd.png"/>
+                                    </ice:panelGrid>
+                                    <ace:dataTable value="#{mttoPep.lstEstrategias}" var="est" rows="5" paginator="true" paginatorPosition="bottom">
+                                        <ace:column headerText="Línea Estratégica ">
+                                            <h:outputText value="#{est.descrip}"/>
+                                        </ace:column>
+                                        <ace:column headerText="Año" style="text-align: center; width: 60px;">
+                                            <h:outputText value="#{est.anio}"/>
+                                        </ace:column>
+                                        <ace:column headerText="Acciones" style="width: 50px; text-align: center;">
+                                            <h:commandButton action="#{mttoPep.prepararEdicionEstrategia(est)}" 
+                                                             image="/resources/images/lapiz.png"
+                                                             style="width: 16px; height: 16px"
+                                                             title="Editar Línea Estratégica">
+
+                                                <ace:ajax execute="@this" render="@all" onComplete="popupEstrategia.show();"/>
+                                            </h:commandButton>
+
+                                        </ace:column>
+
+                                        <ace:column headerText="Eliminar" style="width: 50px; text-align: center;">
+                                            <h:commandButton action="#{mttoPep.prepararEliminarGenerico(est, 6)}" 
+                                                             disabled="#{mttoPep.pepBloqueado}"
+                                                             image="/resources/images/iconRemove.png"
+                                                             style="width: 16px; height: 16px"
+                                                             title="Eliminar Línea Estratégica">
+                                                <f:ajax execute="@this" render=":popupConfirmacionGeneral :msgForm"/>                                        
+                                            </h:commandButton>
+
+
+                                        </ace:column>
+                                    </ace:dataTable>
+                                </ice:panelGrid>
+                            </ice:panelGroup>
+
+                            <div style="margin-top: 20px; margin-bottom: 20px;">
+
+                                <!-- ================================== -->
+                                <!-- PANEL DEL RESUMEN GENERAL CON AJAX -->
+                                <!-- ================================== -->
+                                <ace:panel header="RESUMEN DE MI PLAN ESTRATÉGICO PARTICIPATIVO"
+                                           toggleable="true"
+                                           collapsed="true"
+                                           styleClass="panel-matriz">
+
+                                    <ace:ajax event="toggle" listener="#{mttoPep.cargarVistaGeneral}" />
+
+                                    <div style="max-height: 600px; overflow-y: auto;">
+
+                                        <h:panelGrid columns="4" width="100%" style="margin-bottom: 20px; margin-top: 20px; text-align: center;">
+                                            <h:panelGroup>
+                                                <h:outputText value="PERSPECTIVAS" style="font-size: 11px; font-weight: bold; "/><br/>
+                                                <h:outputText value="#{mttoPep.totalGlobalPerspectivas}" style="font-size: 24px; font-weight: bold;"/>
+                                            </h:panelGroup>
+
+                                            <h:panelGroup>
+                                                <h:outputText value="OBJETIVOS ESTRATÉGICOS" style="font-size: 11px; font-weight: bold;"/><br/>
+                                                <h:outputText value="#{mttoPep.totalGlobalObjetivos}" style="font-size: 24px; font-weight: bold; "/>
+                                            </h:panelGroup>
+
+                                            <h:panelGroup>
+                                                <h:outputText value="INDICADORES DE CUMPLIMIENTO" style="font-size: 11px; font-weight: bold;"/><br/>
+                                                <h:outputText value="#{mttoPep.totalGlobalIndicadores}" style="font-size: 24px; font-weight: bold;"/>
+                                            </h:panelGroup>
+
+
+
+
+                                            <h:panelGroup>
+                                                <!-- ✅ KPI de estrategias muestra el año filtrado -->
+                                                <h:outputText value="ESTRATEGIAS"
+                                                              style="font-size: 11px; font-weight: bold;"/>
+                                                <h:outputText value=" (#{mttoPep.filtroAnioEstrategia})"
+                                                              rendered="#{mttoPep.filtroAnioEstrategia != null and mttoPep.filtroAnioEstrategia gt 0}"
+                                                              style="font-size: 10px; color: #5c9ccc; font-weight: bold;"/>
+                                                <br/>
+                                                <h:outputText value="#{mttoPep.totalGlobalEstrategias}"
+                                                              style="font-size: 24px; font-weight: bold;"/>
+                                            </h:panelGroup>
+                                        </h:panelGrid>
+
+                                        <table class="tabla-matriz">
+                                            <thead>
+                                                <tr>
+                                                    <th>Perspectiva</th>
+                                                    <th>Objetivo Estratégico</th>
+                                                    <th>Indicadores de Cumplimiento</th>
+                                                    <th>Líneas Estratégicas</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                <ui:repeat value="#{mttoPep.lstArbolCompleto}" var="per">
+
+                                                    <ui:repeat value="#{per.plnpepobjetivoList}" var="obj" varStatus="objStatus">
+
+                                                        <ui:repeat value="#{obj.plnpepindicumplList}" var="ind" varStatus="indStatus">
+
+                                                            <ui:repeat value="#{ind.plnpeplinestrList}" var="est" varStatus="estStatus">
+
+                                                                <tr>
+                                                                    <!-- Perspectiva -->
+                                                                    <h:panelGroup rendered="#{objStatus.first and indStatus.first and estStatus.first}">
+                                                                        <td class="col-perspectiva-container"  
+                                                                            rowspan="#{per.totalFilasPerspectiva}">
+                                                                            <h:outputText value="#{per.perspectivaMaestra.nombre}" />
+                                                                        </td>
+                                                                    </h:panelGroup>
+
+                                                                    <!-- Objetivo Estratégico -->
+                                                                    <h:panelGroup rendered="#{indStatus.first and estStatus.first}">
+                                                                        <td class="col-objetivo" 
+                                                                            rowspan="#{obj.totalFilas}">
+                                                                            <span class="badge-codigo">
+                                                                                #{obj.codigooe}
+                                                                            </span>
+                                                                            <span class="titulo-objetivo">
+                                                                                <h:outputText value="#{obj.descrip}" />
+                                                                            </span>
+                                                                        </td>
+                                                                    </h:panelGroup>
+
+                                                                    <!-- Indicador -->
+                                                                    <h:panelGroup rendered="#{estStatus.first}">
+                                                                        <td class="col-indicador" 
+                                                                            rowspan="#{ind.plnpeplinestrList.size()}">
+                                                                            <span class="badge-indicador">
+                                                                                #{ind.codigoindicador}
+                                                                            </span>
+                                                                            <h:outputText value="#{ind.descrip}" />
+                                                                        </td>
+                                                                    </h:panelGroup>
+
+                                                                    <!-- Línea Estratégica -->
+                                                                    <td class="col-estrategia">
+                                                                        <span class="anio-tag">
+                                                                            #{est.anio}
+                                                                        </span>
+                                                                        <h:outputText value="#{est.descrip}" />
+                                                                    </td>
+                                                                </tr>
+
+                                                            </ui:repeat>
+
+                                                            <!-- Si el indicador no tiene líneas estratégicas -->
+                                                            <h:panelGroup rendered="#{empty ind.plnpeplinestrList}">
+                                                                <tr>
+                                                                    <h:panelGroup rendered="#{objStatus.first and indStatus.first}">
+                                                                        <td class="col-perspectiva-container" 
+                                                                            rowspan="#{per.totalFilasPerspectiva}">
+                                                                            <h:outputText value="#{per.perspectivaMaestra.nombre}" />
+                                                                        </td>
+                                                                    </h:panelGroup>
+
+                                                                    <h:panelGroup rendered="#{indStatus.first}">
+                                                                        <td class="col-objetivo" 
+                                                                            rowspan="#{obj.totalFilas}">
+                                                                            <span class="badge-codigo">
+                                                                                #{obj.codigooe}
+                                                                            </span>
+                                                                            <span class="titulo-objetivo">
+                                                                                <h:outputText value="#{obj.descrip}" />
+                                                                            </span>
+                                                                        </td>
+                                                                    </h:panelGroup>
+
+                                                                    <td class="col-indicador">
+                                                                        <span class="badge-indicador">
+                                                                            #{ind.codigoindicador}
+                                                                        </span>
+                                                                        <h:outputText value="#{ind.descrip}" />
+                                                                    </td>
+
+                                                                    <td class="col-estrategia" style="color:#ccc;font-size:10px;font-style:italic;">
+                                                                        Sin estrategias definidas
+                                                                    </td>
+                                                                </tr>
+                                                            </h:panelGroup>
+
+                                                        </ui:repeat>
+
+                                                        <!-- Si el objetivo no tiene indicadores -->
+                                                        <h:panelGroup rendered="#{empty obj.plnpepindicumplList}">
+                                                            <tr>
+                                                                <h:panelGroup rendered="#{objStatus.first}">
+                                                                    <td class="col-perspectiva-container" 
+                                                                        rowspan="#{per.totalFilasPerspectiva}">
+                                                                        <h:outputText value="#{per.perspectivaMaestra.nombre}" />
+                                                                    </td>
+                                                                </h:panelGroup>
+
+                                                                <td class="col-objetivo">
+                                                                    <span class="badge-codigo">
+                                                                        #{obj.codigooe}
+                                                                    </span>
+                                                                    <span class="titulo-objetivo">
+                                                                        <h:outputText value="#{obj.descrip}" />
+                                                                    </span>
+                                                                </td>
+                                                                <td colspan="2" style="padding:15px;text-align:center;color:#999;font-style:italic;">
+                                                                    No hay indicadores registrados para este objetivo.
+                                                                </td>
+                                                            </tr>
+                                                        </h:panelGroup>
+
+                                                    </ui:repeat>
+
+                                                </ui:repeat>
+                                            </tbody>
+                                        </table>
+
+                                        <!-- Sin datos -->
+                                        <h:panelGroup rendered="#{empty mttoPep.lstArbolCompleto}"
+                                                      style="display:block;padding:20px;text-align:center;">
+                                            <h:outputText
+                                                value="Seleccione un Plan Estratégico Participativo con datos para ver su resumen."
+                                                style="font-weight:bold;color:#777;" />
+                                        </h:panelGroup>
+
+                                    </div>
+                                </ace:panel>
+                            </div>
+
+                        </ice:panelGroup>
+                        <ice:panelGroup rendered="#{mttoPep.pep.idpep == null}">
+                            <ice:panelGrid styleClass="centeredPanelGrid" width="100%" 
+                                           style="background-color: #fcf8e3; padding: 15px; text-align: center; border: 1px solid #faebcc;">
+                                <h:outputLabel value="Crea o selecciona un PEP primero para guardar sus datos generales." 
+                                               style="font-style: italic; color: #8a6d3b;"/>
+                            </ice:panelGrid>
+                        </ice:panelGroup>
+                    </ice:panelGrid>
+                </ace:tabPane>
+            </ace:tabSet>
+        </h:form>
+
+        <!-- ====================================== -->
+        <!-- POP UP GENERAL PARA CONFIRMAR ELIMINAR -->
+        <!-- ====================================== -->
+        <ace:confirmationDialog id="popupConfirmacionGeneral"
+                                widgetVar="popupConfirmacionGeneral"
+                                message="#{mttoPep.mensajeConfirmacion}"
+                                header="Confirmación"
+                                showEffect="slide" hideEffect="slide"
+                                width="350" height="130"
+                                closable="true" modal="true" position="center">
+            <h:form id="frmConfirm">
+                <h:panelGrid columns="2" styleClass="centeredPanelGrid">
+                    <ice:commandButton value="Si" 
+                                       action="#{mttoPep.confirmarEliminacion()}">
+                    </ice:commandButton>
+                    <ice:commandButton value="No" onclick="popupConfirmacionGeneral.hide();"/>
+                </h:panelGrid>
+            </h:form>
+        </ace:confirmationDialog>
+
+        <!-- ================================== -->
+        <!-- POP UP DE CATALOGO DE PERSPECTIVAS -->
+        <!-- ================================== -->
+        <ace:confirmationDialog id="popupCatalogo" widgetVar="popupCatalogo" modal ="true"
+                                header="Administrar Catálogo de Perspectivas"
+                                showEffect="slide" hideEffect="slide"
+                                message="Cree nuevas Perspectivas para usarlas en su PEP"
+                                width="700"  closable="true" position="center">
+            <h:form id="frmCatalogo">
+                <ice:panelGrid columns="4" styleClass="centeredPanelGrid" cellpadding="5" 
+                               style=" width: 100%; border-bottom: 1px solid #ccc; margin-bottom: 10px; padding: 10px;">
+                    <ice:outputLabel value="Nombre Categoría:" style="font-weight:bold"/>
+                    <ace:textEntry value="#{mttoPep.nuevaCategoria.nombre}" style="width: 250px;" maxlength="100"/>
+                    <ice:outputLabel value="Estado:" style="font-weight:bold"/>
+                    <ace:simpleSelectOneMenu value="#{mttoPep.nuevaCategoria.estado}" style="width: 150px;">
+                        <f:selectItem itemLabel="Activo" itemValue="1"/>
+                        <f:selectItem itemLabel="Inactivo" itemValue="0"/>
+                    </ace:simpleSelectOneMenu>
+
+                </ice:panelGrid>
+
+                <ace:menuBar id="menuBarMantenimiento">
+                    <ace:menuItem id="miGuardar" 
+                                  value="Guardar" 
+                                  icon="ui-icon ui-icon-disk" 
+                                  action="#{mttoPep.guardarCategoriaMaestra()}" />
+
+                    <ace:menuItem id="miEliminar" 
+                                  value="Eliminar" 
+                                  icon="ui-icon ui-icon-trash" 
+                                  action="#{mttoPep.prepararEliminarGenerico(mttoPep.nuevaCategoria, 4)}" 
+                                  rendered="#{mttoPep.nuevaCategoria.idmaestro != null}">
+                        <f:ajax execute="@this" render=":popupConfirmacionGeneral :msgForm"/>
+                    </ace:menuItem>
+
+                    <ace:menuItem id="miNuevo" 
+                                  value="Nuevo" 
+                                  icon="ui-icon ui-icon-document" 
+                                  action="#{mttoPep.abrirPopupCatalogo()}" 
+                                  rendered="#{mttoPep.nuevaCategoria.idmaestro != null}"/>
+
+                    <ace:menuItem id="miLimpiar" 
+                                  value="Limpiar" 
+                                  icon="ui-icon ui-icon-refresh" 
+                                  action="#{mttoPep.abrirPopupCatalogo()}" 
+                                  rendered="#{mttoPep.nuevaCategoria.idmaestro != null}"/>
+                </ace:menuBar>
+
+
+                <ace:dataTable value="#{mttoPep.lstCatalogoMaestro}" var="cat"
+                               rows="6" paginator="true" paginatorPosition="bottom"
+                               selectionMode="single" stateMap="#{mttoPep.smCatalogo}"
+                               rowSelectListener="#{mttoPep.seleccionarDelCatalogo()}">
+                    <ace:ajax event="select" render=":frmCatalogo" />
+                    <ace:column headerText="ID" style="width: 40px;">
+                        <h:outputText value="#{cat.idmaestro}"/>
+                    </ace:column>
+                    <ace:column headerText="Nombre">
+                        <h:outputText value="#{cat.nombre}" style="font-weight: bold;"/>
+                    </ace:column>
+                    <ace:column headerText="Estado" style="text-align: center;">
+                        <h:outputText value="#{cat.estado == 1 ? 'Activo' : 'Inactivo'}" 
+                                      style="color: #{cat.estado == 1 ? 'green' : 'red'}; font-weight: bold;"/>
+                    </ace:column>
+
+                </ace:dataTable>
+                <div style="height: 10px;"></div>
+                <center>
+                    <h:commandButton value="Cerrar" onclick="popupCatalogo.hide();
+                            return false;" 
+                                     type="button" style="padding: 5px 20px; cursor: pointer;"/>
+                </center>
+            </h:form>
+        </ace:confirmationDialog>
+
+        <!-- ================================ -->
+        <!-- POP UP DE OBJETIVOS ESTRATEGICOS -->
+        <!-- ================================ -->
+        <ace:confirmationDialog widgetVar="popupObjetivo" id="dgpopupObjetivo"
+                                header="#{mttoPep.editandoObjetivo ? 'Editar Objetivo' : 'Nuevo Objetivo'}" 
+                                showEffect="slide" hideEffect="slide"
+                                width="500"  closable="true" modal="true"  
+                                message="Complete los siguientes campos para guardar un Objetivo Estratégico">
+            <h:form id="popupObjetivoForm">
+
+                <ice:panelGroup style="background-color: #f7f9fa; border-left: 4px solid #5c9ccc; padding: 10px; margin-bottom: 10px; display: block;">
+                    <h:outputLabel value="Ubicación en Jerarquía" style="font-weight: bold; color: #0056b3; display:block; margin-bottom: 5px;"/>
+                    <ice:panelGrid columns="2" columnClasses="colLabel, colValue" style="width: 100%">
+
+                        <h:outputLabel value="PEP:" style="font-weight: bold; font-size: 11px;"/>
+                        <h:outputText value="#{mttoPep.pep.descrip}" style="font-size: 11px;"/>
+
+                        <h:outputLabel value="Perspectiva:" style="font-weight: bold; font-size: 11px;"/>
+                        <h:outputText value="#{mttoPep.resumenJerarquia.perspectiva}" style="font-size: 11px; color: #000;"/>
+
+                    </ice:panelGrid>
+                </ice:panelGroup>
+
+                <ace:menuBar>
+                    <ace:menuItem id="objGuardar" 
+                                  value="Guardar" 
+                                  icon="ui-icon ui-icon-disk" 
+                                  action="#{mttoPep.guardarObjetivo()}"
+                                  />
+                    <ace:menuItem id="objCancelar" 
+                                  value="Cancelar" 
+                                  icon="ui-icon ui-icon-close"
+                                  onclick="popupObjetivo.hide();
+                            return false;" />
+                </ace:menuBar>
+                <ice:panelGrid columns="4" cellpadding="5">
+                    <ice:outputLabel value="Código OE:" style="font-weight: bold;"/>
+                    <ace:textEntry value="#{mttoPep.nuevoObjetivo.codigooe}" maxlength="20"/>
+                    <ice:outputLabel value="Estado:" style="font-weight: bold;"/>
+                    <ace:simpleSelectOneMenu value="#{mttoPep.nuevoObjetivo.estado}">
+                        <f:selectItem itemLabel="Activo" itemValue="1"/>
+                        <f:selectItem itemLabel="Inactivo" itemValue="0"/>
+                    </ace:simpleSelectOneMenu>
+                </ice:panelGrid>
+                <ice:panelGrid columns="1" width="100%" style="margin-top: 10px;">
+                    <ice:outputLabel value="Descripción Detallada:" style="font-weight: bold;"/>
+                    <ace:textAreaEntry value="#{mttoPep.nuevoObjetivo.descrip}" rows="4" cols="60" maxlength="500"/>
+                </ice:panelGrid>
+            </h:form>
+        </ace:confirmationDialog>
+
+        <!-- =================================== -->
+        <!-- POP UP DE INDICADOR DE CUMPLIMIENTO -->
+        <!-- =================================== -->
+        <ace:confirmationDialog widgetVar="popupIndicador" id="dgpopupIndicador"
+                                header="#{mttoPep.editandoIndicador ? 'Editar Indicador de Cumplimiento' : 'Nuevo Indicador de Cumplimiento'}" 
+                                message="Cree un nuevo indicador de cumplimiento"
+                                showEffect="slide" hideEffect="slide" 
+                                width="500"  closable="true" modal="true">
+            <h:form id="popupIndicadorForm">
+
+                <ice:panelGroup style="background-color: #f7f9fa; border-left: 4px solid #5c9ccc; padding: 10px; margin-bottom: 10px; display: block;">
+                    <h:outputLabel value="Ubicación en Jerarquía" style="font-weight: bold; color: #0056b3; display:block; margin-bottom: 5px;"/>
+                    <ice:panelGrid columns="2" columnClasses="colLabel, colValue" style="width: 100%">
+
+                        <h:outputLabel value="PEP:" style="font-weight: bold; font-size: 11px;"/>
+                        <h:outputText value="#{mttoPep.pep.descrip}" style="font-size: 11px;"/>
+
+                        <h:outputLabel value="Perspectiva:" style="font-weight: bold; font-size: 11px;"/>
+                        <h:outputText value="#{mttoPep.resumenJerarquia.perspectiva}" style="font-size: 11px;"/>
+
+                        <h:outputLabel value="Objetivo Estratégico:" style="font-weight: bold; font-size: 11px;"/>
+                        <h:outputText value="#{mttoPep.resumenJerarquia.objetivo}" style="font-size: 11px; color: #000;"/>
+
+                    </ice:panelGrid>
+                </ice:panelGroup>
+
+                <ace:menuBar>
+                    <ace:menuItem id="indGuardar" 
+                                  value="Guardar" 
+                                  icon="ui-icon ui-icon-disk" 
+                                  action="#{mttoPep.guardarIndicador()}"
+                                  disabled="#{mttoPep.pepBloqueado}"/>
+                    <ace:menuItem id="indCancelar" 
+                                  value="Cancelar" 
+                                  icon="ui-icon ui-icon-close"
+                                  onclick="popupIndicador.hide();
+                            return false;" />
+                </ace:menuBar>
+
+                <ice:panelGrid columns="1" width="100%" style="margin-top: 10px;">
+                    <ice:outputLabel value="Descripción / Meta:" style="font-weight: bold;"/>
+                    <ace:textAreaEntry value="#{mttoPep.nuevoIndicador.descrip}" rows="4" cols="60" maxlength="500" />
+                </ice:panelGrid>
+
+            </h:form>
+        </ace:confirmationDialog>
+
+        <!-- ============================= -->
+        <!-- POP UP DE LINEAS ESTRATEGICAS -->
+        <!-- ============================= -->
+        <ace:confirmationDialog widgetVar="popupEstrategia" id="dgpopupEstrategia"
+                                header="#{mttoPep.editandoEstrategia ? 'Editar Estrategia' : 'Nueva Estrategia'}" 
+                                showEffect="slide" hideEffect="slide"
+                                message="Complete los siguientes campos para crear una Línea Estratégica nueva"
+                                width="500"  closable="true" modal="true">
+            <h:form id="popupEstrategiaForm">
+
+                <ice:panelGroup style="background-color: #f7f9fa; border-left: 4px solid #5c9ccc; padding: 10px; margin-bottom: 10px; display: block;">
+                    <ice:panelGrid columns="2" columnClasses="colLabel, colValue" style="width: 100%">
+                        <h:outputLabel value="PEP:" style="font-weight: bold; font-size: 11px;"/>
+                        <h:outputText value="#{mttoPep.pep.descrip}" style="font-size: 11px;"/>
+
+                        <h:outputLabel value="Perspectiva:" style="font-weight: bold; font-size: 11px;"/>
+                        <h:outputText value="#{mttoPep.resumenJerarquia.perspectiva}" style="font-size: 11px;"/>
+
+                        <h:outputLabel value="Objetivo Estratégico:" style="font-weight: bold; font-size: 11px;"/>
+                        <h:outputText value="#{mttoPep.resumenJerarquia.objetivo}" style="font-size: 11px;"/>
+
+                        <h:outputLabel value="Indicador de Cumplimiento:" style="font-weight: bold; font-size: 11px;"/>
+                        <h:outputText value="#{mttoPep.resumenJerarquia.indicador}" style="font-size: 11px; color: #000;"/>
+
+                    </ice:panelGrid>
+                </ice:panelGroup>
+
+                <ace:menuBar>
+                    <ace:menuItem id="indGuardar" 
+                                  value="Guardar" 
+                                  icon="ui-icon ui-icon-disk" 
+                                  action="#{mttoPep.guardarEstrategia()}"/>
+                    <ace:menuItem id="indCancelar" 
+                                  value="Cancelar" 
+                                  icon="ui-icon ui-icon-close"
+                                  onclick="popupEstrategia.hide();
+                            return false;" />
+                </ace:menuBar>
+
+                <ice:panelGrid columns="2" cellpadding="5" >
+                    <ice:outputLabel value="Año Ejecución:" style="font-weight:bold"/>
+                    <ace:maskedEntry value="#{mttoPep.nuevaEstrategia.anio}" mask="9999"  style="width: 100px"/>
+                </ice:panelGrid>
+                <ice:panelGrid  columns="1" cellpadding="5">
+                    <ice:outputLabel value="Descripción Estrategia:" style="font-weight:bold"/>
+                    <ace:textAreaEntry value="#{mttoPep.nuevaEstrategia.descrip}" rows="4" cols="60" maxlength="500" />
+                </ice:panelGrid>
+
+
+
+            </h:form>
+        </ace:confirmationDialog>
+
+
+
+        <ace:dialog id="popupAprobarPep" widgetVar="popupAprobarPep" 
+                    header="Cerrar PEP con Acta" 
+                    modal="true" width="400" height="230" closable="true" resizable="false">
+
+            <h:form id="popupAprobarPepForm">
+
+                <ace:menuBar>
+                    <ace:menuItem id="actAprobGuardar" 
+                                  value="Aprobar con acta" 
+                                  icon="ui-icon ui-icon-disk" 
+                                  action="#{mttoPep.guardarAprobacionPep}"/>
+                    <ace:menuItem id="actAprobCancelar" 
+                                  value="Cancelar" 
+                                  icon="ui-icon ui-icon-close"
+                                  onclick="popupAprobarPep.hide();
+                            return false;" />
+                </ace:menuBar>
+
+                <ice:panelGroup>
+
+                    <h:outputText value="Ingrese los datos de aprobación:" style="font-weight: bold; display: block; margin-bottom: 15px; margin-top: 15px;"/>
+
+                    <h:panelGrid columns="2" width="100%" cellpadding="5" columnClasses="colLabel, colInput">
+
+                        <h:outputLabel value="No. Acta:" style="font-weight:bold;"/>
+                        <ace:textEntry value="#{mttoPep.pep.numacta}" label="Número Acta" style="width: 100%;"/>
+
+                        <h:outputLabel value="Punto de Acta:" style="font-weight:bold;"/>
+                        <ace:textEntry value="#{mttoPep.pep.ptoacta}" label="Pto Acta" style="width: 100%;"/>
+
+                        <h:outputLabel value="Fecha Aprobación:" style="font-weight:bold;"/>
+                        <ace:dateTimeEntry value="#{mttoPep.pep.fchacta}" pattern="dd/MM/yyyy" renderAsPopup="true" style="width: 100%;"/>
+
+                    </h:panelGrid>
+
+                </ice:panelGroup>
+
+
+
+
+            </h:form>
+        </ace:dialog>
+
+
+
+
+        <style>
+            .panel-matriz .ui-widget-header {font-size: 14px; border-radius: 4px 4px 0 0; text-align: center; }
+            .panel-matriz .ui-widget-content {padding: 0 !important; }
+
+            .tabla-matriz {width: 100%; border-collapse: collapse; font-size: 12px; }
+            .tabla-matriz th {background-color: #5c9ccc; color: white; padding: 12px 8px; text-transform: uppercase; font-size: 11px; text-align: center; }
+            .tabla-matriz td {border: 1px solid #5c9ccc; padding: 8px; vertical-align: center; }
+
+            .col-perspectiva-container {background-color: #f2f2f2 !important; font-weight: bold; text-align: center; vertical-align: middle !important; width: 10% }
+
+            .col-objetivo {background-color: #fff; width: 20%; vertical-align: middle !important; }
+            .col-indicador {width: 30%; }
+            .col-estrategia {width: 40%; }
+
+            .titulo-objetivo {display: block; font-weight: 600; color: #2c3e50; margin-bottom: 4px; }
+
+            .badge-codigo {background-color: #5c9ccc; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 5px; display: inline-block; }
+            .badge-paso {background-color: #2c3e50}
+            .badge-indicador {background-color: #f39c12; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-right: 5px; display: inline-block;}
+
+            .lista-estrategias {list-style-type: none ; margin: 0; padding: 0; }
+            .lista-estrategias li {padding: 5px 0 10px ; border-bottom: 1px solid #5c9ccc; }
+            .lista-estrategias li:last-child {border-bottom: none; padding-top: 10px }
+
+            .anio-tag {color: #5c9ccc; font-size: 10px; font-style: italic; float: right; }
+            .col-anio {width: 60px; text-align: center; font-size: 11px; color: #5c9ccc; font-weight: bold; vertical-align: middle;}
+
+            td { vertical-align: middle !important;}
+        </style>
+
+    </f:view>
+</ui:composition>
