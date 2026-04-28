@@ -42,14 +42,16 @@
                 <!-- ======================== -->
                 <!-- TAB PANE DE BUSQUEDA PAO -->
                 <!-- ======================== -->
-
                 <ace:tabPane id="tbListado" label="BÚSQUEDA">
                     <h:panelGrid styleClass="centeredPanelGrid" width="100%">
 
                         <h:panelGrid styleClass="centeredPanelGrid" width="100%">
+
                             <ace:menuBar>
-                                <ace:menuItem id="miBsqPep" icon="ui-icon ui-icon-search" action="#{mttoPao.buscarPaos}" value="Buscar"/>
-                                <!-- <ace:menuItem icon="ui-icon ui-icon-refresh" action="#{mttoPao.cargarPaosDelUsuario()}" value="Actualizar Datos"/> -->
+                                <ace:menuItem id="miBsqPep" icon="ui-icon ui-icon-search" action="#{mttoPao.buscarPaos}" value="Buscar" >
+                                    <ace:ajax execute="@form" render="@form :msgForm"/>
+                                </ace:menuItem>
+                                                                <!-- <ace:menuItem icon="ui-icon ui-icon-refresh" action="#{mttoPao.cargarPaosDelUsuario()}" value="Actualizar Datos"/> -->
                                 <ace:menuItem id="miLimpiarPep" icon="ui-icon ui-icon-refresh" action="#{mttoPao.limpiarBusquedaPao}"  value="Limpiar"/>
 
                             </ace:menuBar>
@@ -80,7 +82,6 @@
                         <!-- ============= -->
                         <!-- TABLA DE PAO  -->
                         <!-- ============= -->
-
                         <ice:panelGrid width="100%">
                             <ice:outputLabel value="LISTA DE RESULTADOS" style="font-weight: bold; color: black"/>
                         </ice:panelGrid>
@@ -99,6 +100,7 @@
                             <ace:column headerText="Año del PAO"  sortBy="#{p.anio}" style="width:60px; text-align: center;">
                                 <h:outputText value="#{p.anio}"/>
                             </ace:column>
+                            
                             <ace:column headerText="Nombre del PAO" sortBy="#{p.nombrepao}">
                                 <h:outputText value="#{p.nombrepao}" style="font-weight:bold;"/>
                             </ace:column>
@@ -114,7 +116,6 @@
                 <!-- =========================== -->
                 <!-- TAB PANE DE DETALLES DE PAO -->
                 <!-- =========================== -->
-
                 <ace:tabPane id="tbDetalle" label="DETALLE DEL PAO">
                     <h:panelGrid styleClass="centeredPanelGrid" width="100%">
 
@@ -269,8 +270,13 @@
 
                                         <ice:panelGrid styleClass="centeredPanelGrid" width="100%" columns="2" 
                                                        style="background-color: #5c9ccc; padding: 5px; margin-bottom: 10px;">
-                                            <ice:outputLabel value="GESTIÓN DE ACTIVIDADES" style="font-weight: bold; color: white;"/>                                        
+                                            <ice:outputLabel value="GESTIÓN DE ACTIVIDADES" style="font-weight: bold; color: white;"/>
+                                            <ice:outputLabel value="Crea actividades, planificalas con acciones, evalualas tus acciones, crea iniciativas por indicador de cumplimiento y asocia tus actividades a tus iniciativas para finalizar una actividad" style="color: white;" />
+
+
                                         </ice:panelGrid>
+
+
 
                                         <ice:panelGrid width="100%" style="text-align: right;">
                                             <ice:commandButton title="Nueva Acción" 
@@ -290,8 +296,11 @@
                                                 <h:outputText value="#{acc.idaccionpao}"/>
                                             </ace:column>
 
-                                            <ace:column headerText="actividades">
-                                                <h:outputText value="#{acc.descrip}"/>
+                                            <ace:column headerText="Medio de Verificación" style="width: 30%;">
+                                                <ice:inputTextarea value="#{acc.descrip}" 
+                                                                   cols="20" rows="3"
+                                                                   readonly="true"
+                                                                   style="width: 100%;"/>
                                             </ace:column>
 
                                             <ace:column headerText="Presupuesto ($)" style="text-align: right; width: 100px;">
@@ -300,8 +309,11 @@
                                                 </h:outputText>
                                             </ace:column>
 
-                                            <ace:column headerText="Medio Verificación">
-                                                <h:outputText value="#{acc.medioverifi}"/>
+                                            <ace:column headerText="Medio de Verificación" style="width: 30%;">
+                                                <ice:inputTextarea value="#{acc.medioverifi}" 
+                                                                   cols="20" rows="3"
+                                                                   readonly="true"
+                                                                   style="width: 100%;"/>
                                             </ace:column>
 
                                             <ace:column headerText="Editar" style="text-align: center; width: 50px;">
@@ -323,20 +335,6 @@
 
                                             </ace:column>
 
-
-
-
-                                            <ace:column headerText="Evaluar" style="text-align: center; width: 50px;">
-                                                <h:commandButton title="Evaluar Acción" 
-                                                                 image="/resources/images/doc.png"
-                                                                 style="width: 16px; height: 16px"
-                                                                 action="#{mttoPao.irAEvaluarDesdeDetalle(acc)}">
-                                                    <!-- ✅ Referenciar el dialog completo, no el form interno -->
-                                                    <f:ajax execute="@this" render=":popupEvaluacion :msgForm"/>
-                                                </h:commandButton>
-                                            </ace:column>
-
-
                                             <ace:column headerText="Planificación" style="width: 80px; text-align: center;">
                                                 <h:commandButton title="Planeacion Trimestral" 
                                                                  image="/resources/images/form.png"
@@ -345,6 +343,16 @@
                                                     <f:ajax execute="@this" render=":popupTrimForm"/>
                                                 </h:commandButton>
                                             </ace:column>
+
+                                            <ace:column headerText="Evaluar" style="text-align: center; width: 50px;">
+                                                <h:commandButton title="Evaluar Acción" 
+                                                                 image="/resources/images/doc.png"
+                                                                 style="width: 16px; height: 16px"
+                                                                 action="#{mttoPao.irAEvaluarDesdeDetalle(acc)}">
+                                                    <f:ajax execute="@this" render=":popupEvaluacionForm :msgForm"/>
+                                                </h:commandButton>
+                                            </ace:column>
+
                                         </ace:dataTable>
 
                                         <div style="height: 20px;"></div>
@@ -358,7 +366,7 @@
                                         <!-- TABLA actividades NO PLANIFICADAS -->
                                         <!-- ============================== -->
 
-                                        <ice:panelGroup  style="margin-bottom: 25px; display:block; " >
+                                        <ice:panelGroup id="wrapperNoPlan" style="margin-bottom: 25px; display:block; " >
 
                                             <ice:panelGrid width="100%" style="text-align: right; margin-bottom: 10px;">
                                                 <ice:commandButton title="Nueva Acción No Planeada" 
@@ -377,27 +385,39 @@
                                                     <h:outputText value="#{np.idaccinoplan}"/>
                                                 </ace:column>
 
-                                                <ace:column headerText="Actividades no Planificadas">
-                                                    <h:outputText value="#{np.descrip}"/>
+                                                <ace:column headerText="Actividades no Planificadas" style="width: 30%;">
+                                                    <ice:inputTextarea value="#{np.descrip}" 
+                                                                       cols="20" rows="3"
+                                                                       readonly="true"
+                                                                       style="width: 100%;"/>
                                                 </ace:column>
 
-                                                <ace:column headerText="Periodo Evaluación" >
+                                                <ace:column headerText="Periodo Evaluación" style="width: 20%;" >
                                                     <h:outputText value="#{np.perieval}"/>
                                                 </ace:column>
 
-                                                <ace:column headerText="Proyectado" >
-                                                    <h:outputText value="#{np.proyec}"/>
+                                                <ace:column headerText="Proyectado" style="width: 30%;">
+                                                    <ice:inputTextarea value="#{np.proyec}" 
+                                                                       cols="20" rows="3"
+                                                                       readonly="true"
+                                                                       style="width: 100%;"/>
                                                 </ace:column>
 
-                                                <ace:column headerText="Realizado" >
-                                                    <h:outputText value="#{np.realiz}"/>
+                                                <ace:column headerText="Realizado" style="width: 30%;">
+                                                    <ice:inputTextarea value="#{np.realiz}" 
+                                                                       cols="20" rows="3"
+                                                                       readonly="true"
+                                                                       style="width: 100%;"/>
                                                 </ace:column>
                                                 <ace:column headerText="Cumplimiento"  style="width: 50px; text-align: right;">
                                                     <h:outputText value="#{np.cumplipct}%"/>
                                                 </ace:column>
 
-                                                <ace:column headerText="Observaciones" >
-                                                    <h:outputText value="#{np.observ}"/>
+                                                <ace:column headerText="Observaciones" style="width: 30%;">
+                                                    <ice:inputTextarea value="#{np.observ}" 
+                                                                       cols="20" rows="3"
+                                                                       readonly="true"
+                                                                       style="width: 100%;"/>
                                                 </ace:column>
 
                                                 <ace:column headerText="Editar" style="width: 50px; text-align: center;">
@@ -429,7 +449,6 @@
                 <!-- ======================== -->
                 <!-- TAB PANE DE EVALUACIONES -->
                 <!-- ======================== -->
-
                 <ace:tabPane id="tbEvaluacion" label="EVALUACIÓN Y PLANIFICACIÓN DE ACTIVIDADES" disabled="#{mttoPao.paoActual.idpao == null }">
                     <h:panelGrid styleClass="centeredPanelGrid" width="100%">
 
@@ -539,30 +558,24 @@
                                         <h:outputText value="#{item.idaccionpao}"/>
                                     </ace:column>
 
-                                    <ace:column headerText="Actividades sin Evaluación">
-                                        <h:outputText value="#{item.descrip}"/>
+                                    <ace:column headerText="Actividades sin Evaluación" style="width: 30%;" filterBy="#{item.descrip}">
+                                        <ice:inputTextarea value="#{item.descrip}" 
+                                                           cols="20" rows="3"
+                                                           readonly="true"
+                                                           style="width: 100%;"/>
                                     </ace:column>
+
                                     <ace:column headerText="Presupuesto" style="width: 100px;">
                                         <h:outputText value="#{item.presupropues}">
                                             <f:convertNumber type="currency" currencySymbol="$"/>
                                         </h:outputText>
                                     </ace:column>
-                                    <ace:column headerText="Medio Verificación" style="width: 200px;">
-                                        <h:outputText value="#{item.medioverifi}"/>
+                                    <ace:column headerText="Medio de Verificación" style="width: 30%;">
+                                        <ice:inputTextarea value="#{item.medioverifi}" 
+                                                           cols="20" rows="3"
+                                                           readonly="true"
+                                                           style="width: 100%;"/>
                                     </ace:column>
-
-                                    <ace:column headerText="Evaluar" style="width: 90px; text-align: center;">
-                                        <h:commandButton action="#{mttoPao.prepararEvaluacion(item)}"
-                                                         title="Evaluar Acción"
-                                                         image="/resources/images/doc.png"
-                                                         style="width: 16px; height: 16px">
-                                            <f:ajax execute="@this" render=":popupEvaluacion :msgForm"/>
-                                        </h:commandButton>
-                                    </ace:column>
-
-
-
-
 
                                     <ace:column headerText="Planificación" style="width: 80px; text-align: center;">
                                         <h:commandButton title="Planeacion Trimestral"
@@ -572,11 +585,21 @@
                                             <f:ajax execute="@this" render=":popupTrimForm"/>
                                         </h:commandButton>
                                     </ace:column>
+
+                                    <ace:column headerText="Evaluar" style="width: 90px; text-align: center;">
+                                        <h:commandButton action="#{mttoPao.prepararEvaluacion(item)}"
+                                                         title="Evaluar Acción"
+                                                         image="/resources/images/doc.png"
+                                                         style="width: 16px; height: 16px">
+                                            <f:ajax execute="@this" render=":popupEvaluacionForm :msgForm"/>
+                                        </h:commandButton>
+                                    </ace:column>
                                 </ace:dataTable>
 
                                 <!-- ══════════════════════════════════════════ -->
                                 <!-- TABLA DE EVALUACIONES YA REALIZADAS        -->
                                 <!-- ══════════════════════════════════════════ -->
+
                                 <ice:panelGrid width="100%" style="padding-top: 20px;">
                                     <ice:outputLabel value="ACTIVIDADES YA EVALUADAS"
                                                      style="font-weight: bold;"/>
@@ -592,17 +615,20 @@
                                         <h:outputText value="#{evalItem.idaccionpao.idaccionpao}"/>
                                     </ace:column>
 
-                                    <ace:column headerText="Actividad">
-                                        <h:outputText value="#{evalItem.idaccionpao.descrip}"/>
+                                    <ace:column headerText="Actividades" style="width: 30%;" filterBy="#{evalItem.idaccionpao.descrip}">
+                                        <ice:inputTextarea value="#{evalItem.idaccionpao.descrip}" 
+                                                           cols="20" rows="3"
+                                                           readonly="true"
+                                                           style="width: 100%;"/>
                                     </ace:column>
 
-                                    <ace:column headerText="Periodo" style="width: 160px;">
-                                        <h:outputText value="#{evalItem.perieval}"
-                                                      style="font-weight:bold; color:#1a5276;"/>
+                                    <ace:column headerText="Periodo" style="width: 160px;" sortBy="#{evalItem.perieval}">
+                                        <h:outputText value="#{evalItem.perieval}"/>
                                     </ace:column>
 
-                                    <ace:column headerText="% Cumplimiento" style="width: 110px; text-align: center;">
+                                    <ace:column headerText="% Cumplimiento" style="width: 100px; text-align: center;" sortBy="#{evalItem.cumplipct}">
                                         <h:outputText value="#{evalItem.cumplipct}%"
+
                                                       style="font-weight:bold;
                                                       color:#{evalItem.cumplipct ge 80 ? '#27ae60'
                                                               : evalItem.cumplipct ge 50 ? '#e67e22' : 'red'};"/>
@@ -613,9 +639,6 @@
                                             <f:convertDateTime pattern="dd/MM/yyyy"/>
                                         </h:outputText>
                                     </ace:column>
-
-
-                                    <!-- Botón ver detalle — abre el mismo popupEvaluacion en modo lectura -->
 
 
                                     <ace:column headerText="Ver Evaluación" style="text-align: center; width: 50px;">
@@ -643,87 +666,85 @@
 
 
                                 </ace:dataTable>
-
                             </ice:panelGroup>
 
 
                         </ice:panelGroup>
 
 
-                        <!-- ========================================= -->
+                        <!-- =========================================== -->
                         <!-- TABLA actividades NO PLANIFICADAS EVALUADAS -->
-                        <!-- ========================================= -->
-                        <ice:panelGroup style="display:block; margin-top: 20px;">
-                            <ice:panelGrid width="100%">
-                                <ice:outputLabel value="HISTÓRICO DE TODAS LAS ACTIVIDADES NO PLANIFICADAS EJECUTADAS" 
-                                                 style="font-weight: bold; "/>
-                            </ice:panelGrid>
+                        <!-- =========================================== -->
+                        <ice:panelGrid width="100%">
+                            <ice:outputLabel value="HISTÓRICO DE TODAS LAS ACTIVIDADES NO PLANIFICADAS EJECUTADAS" 
+                                             style="font-weight: bold; "/>
+                        </ice:panelGrid>
 
-                            <h:panelGroup id="panelNoPlanificadas" layout="block">
+                        <h:panelGroup id="panelNoPlanificadas" layout="block">
 
-                                <ace:dataTable id="tablaNoPlanificadas" 
-                                               value="#{mttoPao.listaNoPlanificadasEvaluadas}" 
-                                               var="noPlan" 
-                                               rows="5" 
-                                               paginator="true" 
-                                               paginatorPosition="bottom"
-                                               emptyMessage="No se han registrado actividades no planificadas aún.">
-
-
-                                    <ace:column headerText="ID Acción No Planificada" style="width: 90px;">
-                                        <h:outputText value="#{noPlan.idaccinoplan}"/>
-                                    </ace:column>
-
-                                    <ace:column headerText="Acción No Planificada">
-                                        <h:outputText value="#{noPlan.descrip}"/>
-                                    </ace:column>
-
-                                    <ace:column headerText="Periodo" style="width: 150px; text-align: center;">
-                                        <h:outputText value="#{noPlan.perieval}"/>
-                                    </ace:column>
-
-                                    <ace:column headerText="Fecha de evaluación" style="width: 150px; text-align: center;">
-                                        <h:outputText value="#{noPlan.fchacrea}">
-                                            <f:convertDateTime pattern="dd/MM/yyyy"/>
-                                        </h:outputText>
-                                    </ace:column>
+                            <ace:dataTable id="tablaNoPlanificadas" 
+                                           value="#{mttoPao.listaNoPlanificadasEvaluadas}" 
+                                           var="noPlan" 
+                                           rows="5" 
+                                           paginator="true" 
+                                           paginatorPosition="bottom"
+                                           emptyMessage="No se han registrado actividades no planificadas aún.">
 
 
+                                <ace:column headerText="ID Acción No Planificada" style="width: 90px;">
+                                    <h:outputText value="#{noPlan.idaccinoplan}"/>
+                                </ace:column>
+
+                                <ace:column headerText="Acción No Planificada" style="width: 30%;" filterBy="#{noPlan.descrip}">
+                                    <ice:inputTextarea value="#{noPlan.descrip}" 
+                                                       cols="20" rows="3"
+                                                       readonly="true"
+                                                       style="width: 100%;"/>
+                                </ace:column>
+
+                                <ace:column headerText="Periodo" style="width: 160px; text-align: center;" sortBy="#{noPlan.perieval}">
+                                    <h:outputText value="#{noPlan.perieval}"/>
+                                </ace:column>
+
+                                <ace:column headerText="Fecha de evaluación" style="width: 150px; text-align: center;">
+                                    <h:outputText value="#{noPlan.fchacrea}">
+                                        <f:convertDateTime pattern="dd/MM/yyyy"/>
+                                    </h:outputText>
+                                </ace:column>
 
 
-                                    <ace:column headerText="Cumplimiento" sortBy="#{noPlan.cumplipct}" style="width: 90px; text-align: center;">
 
 
-                                        <h:outputText value="#{noPlan.cumplipct}%"
-                                                      style="font-weight:bold;
-                                                      color:#{noPlan.cumplipct ge 80 ? '#27ae60'
-                                                              : noPlan.cumplipct ge 50 ? '#e67e22' : 'red'};"/>
-
-                                    </ace:column>
+                                <ace:column headerText="Cumplimiento" sortBy="#{noPlan.cumplipct}" style="width: 90px; text-align: center;">
 
 
-                                    <ace:column headerText="Editar" style="width: 50px; text-align: center;">
-                                        <h:commandButton title="Editar Acción No Planificada" 
-                                                         action="#{mttoPao.prepararEditarNoPlan(noPlan)}"
-                                                         image="/resources/images/lapiz.png"
-                                                         style="width: 16px; height: 16px">
-                                            <f:ajax execute="@this" render=":popupNoPlanForm"/>
-                                        </h:commandButton>
-                                    </ace:column>
+                                    <h:outputText value="#{noPlan.cumplipct}%"
+                                                  style="font-weight:bold;
+                                                  color:#{noPlan.cumplipct ge 80 ? '#27ae60'
+                                                          : noPlan.cumplipct ge 50 ? '#e67e22' : 'red'};"/>
 
-                                </ace:dataTable>
+                                </ace:column>
 
-                            </h:panelGroup>
 
-                        </ice:panelGroup>
+                                <ace:column headerText="Editar" style="width: 50px; text-align: center;">
+                                    <h:commandButton title="Editar Acción No Planificada" 
+                                                     action="#{mttoPao.prepararEditarNoPlan(noPlan)}"
+                                                     image="/resources/images/lapiz.png"
+                                                     style="width: 16px; height: 16px">
+                                        <f:ajax execute="@this" render=":popupNoPlanForm"/>
+                                    </h:commandButton>
+                                </ace:column>
+
+                            </ace:dataTable>
+
+                        </h:panelGroup>
 
                     </h:panelGrid>
                 </ace:tabPane>
 
-                <!-- ============================ -->
+                <!-- =============================== -->
                 <!-- TABLA actividades NO INCIATIVAS -->
-                <!-- ============================ -->
-
+                <!-- =============================== -->
                 <ace:tabPane id="tbIniciativas" label="GESTIÓN DE INICIATIVAS" disabled="#{mttoPao.paoActual.idpao == null}">
                     <h:panelGrid styleClass="centeredPanelGrid" width="100%">
 
@@ -798,6 +819,7 @@
 
 
                                 </h:panelGroup>
+                                <h:outputLabel value="4. Cree una iniciativa y asocie sus acciones" style="font-weight:bold;"/>
 
 
                             </h:panelGrid>
@@ -900,6 +922,52 @@
                 </ace:tabPane>
 
 
+                <!-- =============================== -->
+                <!-- TABLA ACTIVIDADES SEGUIMIENTOS -->
+                <!-- =============================== -->
+
+                <ace:tabPane id="tbSeguimientoGerencial" label="INFORME DE SEGUIMIENTOS" disabled="#{mttoPao.paoActual.idpao == null}">
+
+                    <f:event type="preRenderComponent" listener="#{mttoPao.cargarTabSeguimiento}" />
+
+                    <h:panelGrid columns="1" width="100%">
+
+
+                        <h:outputLabel value="ACTIVIDADES QUE SOLICITAN SEGUIMIENTOS"/>
+
+                        <ace:dataTable value="#{mttoPao.listaCriticasPendientes}" var="pend">
+                            <ace:column headerText="Actividad"><h:outputText value="#{pend.descrip}"/></ace:column>
+                            <ace:column headerText="Periodo"><h:outputText value="#{pend.ultimaEvaluacion.perieval}"/></ace:column>
+                            <ace:column headerText="%" style="text-align:center;"><h:outputText value="#{pend.ultimaEvaluacion.cumplipct}%" style="color:red; font-weight:bold;"/></ace:column>
+                            <ace:column headerText="Seguimiento" style="text-align:center;">
+                                <h:commandButton action="#{mttoPao.prepararSeguimiento(pend)}" image="/resources/images/uncheck.png" style="width:16px;">
+                                    <f:ajax execute="@this" render=":popupSeguimientoForm"/>
+                                </h:commandButton>
+                            </ace:column>
+                        </ace:dataTable>
+
+                        <h:outputLabel value="SEGUIMIENTOS REGISTRADOS"/>
+
+                        <ace:dataTable value="#{mttoPao.listaSeguimientosYaRealizados}" var="seg">
+                            <ace:column headerText="Actividad"><h:outputText value="#{seg.idaccionpao.descrip}"/></ace:column>
+                            <ace:column headerText="Periodo" sortBy="#{seg.periodoEvaluacion}"><h:outputText value="#{seg.periodoEvaluacion}"/></ace:column>
+                            <ace:column headerText="%" style="text-align:center;"><h:outputText value="#{seg.cumplimientoEvaluacion}%"/></ace:column>
+                            <ace:column headerText="Acción de Mejora"><h:outputText value="#{seg.accireque}"/></ace:column>
+                            <ace:column headerText="Estado"><h:outputText value="#{seg.estado}"/></ace:column>
+                        </ace:dataTable>
+
+                        <ice:panelGroup style="margin-top:20px; padding:10px; border:1px solid #ccc;">
+                            <h:outputLabel value="Imprimir hasta: "/>
+                            <ace:simpleSelectOneMenu value="#{mttoPao.periodoFiltroReporte}">
+                                <f:selectItem itemLabel="-- Todo el Año --" itemValue="0"/>
+                                <f:selectItems value="#{mttoPao.listaPeriodosEvaluacion}"/>
+                            </ace:simpleSelectOneMenu>
+                            <h:commandButton value="Generar PDF" action="#{mttoPao.imprimirSeguimientos}" style="margin-left:10px;"/>
+                        </ice:panelGroup>
+
+                    </h:panelGrid>
+                </ace:tabPane>
+
 
             </ace:tabSet>
 
@@ -918,6 +986,11 @@
 
             <h:form id="frmConfirmPao">
                 <h:panelGrid columns="2" styleClass="centeredPanelGrid">
+
+
+
+
+
                     <ice:commandButton value="Sí" 
                                        action="#{mttoPao.confirmarEliminacion()}">
                     </ice:commandButton>
@@ -957,7 +1030,7 @@
                         <h:outputText value="#{mttoPao.resumenJerarquia.indicador}"/>
 
                         <h:outputLabel value="Línea Estratégica:" style="font-weight: bold;"/>
-                        <h:outputText value="#{mttoPao.resumenJerarquia.estrategia}" style="color: #000;"/>
+                        <h:outputText value="#{mttoPao.resumenJerarquia.estrategia}"/>
 
                         <h:outputLabel value="Acción PAO:" style="font-weight: bold;" rendered="#{mttoPao.editandoAccion}"/>
                         <h:outputText value="#{mttoPao.resumenJerarquia.accion}" style="color: #333; font-style: italic;" rendered="#{mttoPao.editandoAccion}"/>
@@ -983,27 +1056,26 @@
                 </ace:menuBar>
 
                 <h:panelGrid columns="2" width="100%" style="margin-top:10px"  >
-
                     <h:outputLabel value="Descripción:" />
-                    <ace:textAreaEntry value="#{mttoPao.accion.descrip}" rows="3" cols="60" maxlength="500"/>
+                    <ace:textAreaEntry value="#{mttoPao.accion.descrip}" rows="3" cols="60" maxlength="1001"/>
 
                     <h:outputLabel value="Presupuesto:" />
                     <ace:textEntry id="txtPresuAccion" value="#{mttoPao.accion.presupropues}" style="width: 150px;" 
+                                   maxlength="9"
                                    onkeydown="return numeroDecimales(this, event)">
                         <ace:ajax event="blur" render="txtPresuAccion"/>
                         <f:convertNumber minFractionDigits="2" maxFractionDigits="2"/>
                     </ace:textEntry>
 
                     <h:outputLabel value="Medio Verificación:" />
-                    <ace:textAreaEntry value="#{mttoPao.accion.medioverifi}" rows="3" cols="60" maxlength="500"/>
-
+                    <ace:textAreaEntry value="#{mttoPao.accion.medioverifi}" rows="3" cols="60" maxlength="1001"/>
                 </h:panelGrid>
 
             </h:form>
         </ace:dialog>
 
         <!-- ========================================= -->
-        <!-- POP UP CREACIÓN DE ACCIÓN NO PLANIFICADA -->
+        <!-- POP UP CREACIÓN DE ACCIÓN NO PLANIFICADA  -->
         <!-- ========================================= -->
         <ace:dialog id="popupNoPlan" 
                     widgetVar="popupNoPlan" 
@@ -1033,7 +1105,8 @@
                         <h:outputText value="#{mttoPao.resumenJerarquia.indicador}"/>
 
                         <h:outputLabel value="Línea Estratégica:" style="font-weight: bold;"/>
-                        <h:outputText value="#{mttoPao.resumenJerarquia.estrategia}" style="color: #000;"/>
+                        <h:outputText value="#{mttoPao.resumenJerarquia.estrategia}"/>
+
                     </ice:panelGrid>
                 </ice:panelGroup>
 
@@ -1043,8 +1116,7 @@
                                   value="Guardar"
                                   icon="ui-icon ui-icon-disk"
                                   action="#{mttoPao.guardarNoPlan}">
-                        <ace:ajax execute="popupNoPlanForm" 
-                                  render="popupNoPlanForm"/>
+                        <f:ajax execute="@form" render=":frmMttoPao:panelAcciones :msgForm"/>
                     </ace:menuItem>
 
                     <ace:menuItem id="miCancelarAccionesNoPlanPao"
@@ -1056,26 +1128,22 @@
                 </ace:menuBar>
 
                 <h:panelGrid columns="2" width="100%" cellpadding="5" style="margin-top:10px" >
-
-
                     <h:outputLabel value="Descripción Acción:" />
-                    <ace:textAreaEntry value="#{mttoPao.accionNoPlanActual.descrip}" rows="4" maxlength="500" cols="60" resizable="false" />
+                    <ace:textAreaEntry value="#{mttoPao.accionNoPlanActual.descrip}" rows="4" maxlength="1001" cols="60" resizable="false" />
 
                     <h:outputLabel value="Periodo Ejecución:" />
-
                     <ace:simpleSelectOneMenu value="#{mttoPao.accionNoPlanActual.perieval}" style="width: 200px;">
-                        <f:selectItem itemLabel="-- Seleccione --" itemValue="0"/>
                         <f:selectItem itemLabel="ENERO - MARZO" itemValue="ENERO - MARZO"/>
                         <f:selectItem itemLabel="ENERO - JUNIO" itemValue="ENERO - JUNIO"/>
                         <f:selectItem itemLabel="ENERO - SEPTIEMBRE" itemValue="ENERO - SEPTIEMBRE"/>
                         <f:selectItem itemLabel="ENERO - DICIEMBRE" itemValue="ENERO - DICIEMBRE"/>
                     </ace:simpleSelectOneMenu>
 
-                    <h:outputLabel value="Proyectado (Meta):"/>
-                    <ace:textAreaEntry value="#{mttoPao.accionNoPlanActual.proyec}" maxlength="500" cols="60" rows="4"/>
+                    <h:outputLabel value="Proyectado:"/>
+                    <ace:textAreaEntry value="#{mttoPao.accionNoPlanActual.proyec}" maxlength="1001" cols="60" rows="4"/>
 
                     <h:outputLabel value="Realizado:"/>
-                    <ace:textAreaEntry value="#{mttoPao.accionNoPlanActual.realiz}" maxlength="500" cols="60" rows="4"/>
+                    <ace:textAreaEntry value="#{mttoPao.accionNoPlanActual.realiz}" maxlength="1001" cols="60" rows="4"/>
 
                     <h:outputLabel value="Cumplimiento:"/>
                     <h:panelGroup>
@@ -1084,25 +1152,20 @@
                             <f:convertNumber pattern="#0.00" minFractionDigits="2" maxFractionDigits="2"/>
                             <f:validateDoubleRange minimum="0.00" maximum="100.00" />
                             <ace:ajax event="blur" render="@this"/>
-
-
                         </ace:textEntry>
                         <h:outputText value=" %"/>
                     </h:panelGroup>
 
                     <h:outputLabel value="Observaciones:" />
-                    <ace:textAreaEntry value="#{mttoPao.accionNoPlanActual.observ}" rows="4" cols="60"/>
-
+                    <ace:textAreaEntry value="#{mttoPao.accionNoPlanActual.observ}" rows="4" cols="60" maxlength="1001"/>
                 </h:panelGrid>
 
             </h:form>
         </ace:dialog>
 
-
-
-
-
-
+        <!-- ============================================== -->
+        <!-- POP UP CREACIÓN DE EVALUACION DE UNA ACTIVIDAD  -->
+        <!-- ============================================== -->
         <ace:dialog id="popupEvaluacion"
                     widgetVar="popupEvaluacion"
                     header="#{mttoPao.evaluacionYaRealizada ? 'Detalle de Evaluación' : 'Evaluar'}: #{mttoPao.resumenJerarquia.accion}"
@@ -1132,7 +1195,7 @@
 
                 <ice:panelGroup rendered="#{empty mttoPao.listaDetallesEvaluar}"
                                 style="display:block; padding:15px; text-align:center; background-color:#fcf8e3; border:1px solid #faebcc; border-radius:5px; margin-bottom:10px;">
-                    <h:outputText value="⚠ Debes agregar mínimo una planificación trimestral antes de evaluar."
+                    <h:outputText value="Debes agregar mínimo una planificación trimestral antes de evaluar."
                                   style="color:#8a6d3b; font-weight:bold; font-size:12px;"/>
                     <br/>
                     <h:outputText value="Usa el botón 'Planificación' en la tabla de actividades."
@@ -1200,24 +1263,16 @@
                                                     <h:outputText value="100.00 %"/>
                                                 </h:panelGroup>
 
-                                                <h:panelGroup
-                                                    rendered="#{!mttoPao.esTrimestralBloqueado(trim)}"
-                                                    style="display:inline-block;">
-                                                    <ice:inputText
-                                                        value="#{trim.cumplipct}"
-                                                        style="width:65px; text-align:center; font-weight:bold;
-                                                        font-size:12px;"
-                                                        maxlength="6"
-                                                        partialSubmit="true"
-                                                        valueChangeListener="#{mttoPao.recalcularCumplimientoEnVivo}"
-                                                        onblur="setFocus('');
-                            iceSubmitPartial(form, this, event);">
-                                                        <f:attribute name="idFila"
-                                                                     value="#{trim.iddetalleplantrim}"/>
-                                                        <f:convertNumber pattern="#0.00"
-                                                                         locale="en_US"
-                                                                         minFractionDigits="2"
-                                                                         maxFractionDigits="2"/>
+                                                <h:panelGroup rendered="#{!mttoPao.esTrimestralBloqueado(trim)}" style="display:inline-block;">
+                                                    <ice:inputText value="#{trim.cumplipct}"
+                                                                   style="width:65px; text-align:center; font-weight:bold; font-size:12px;"
+                                                                   maxlength="3"
+                                                                   partialSubmit="true"
+                                                                   valueChangeListener="#{mttoPao.recalcularCumplimientoEnVivo}">
+
+                                                        <f:attribute name="idFila" value="#{trim.iddetalleplantrim}"/>
+                                                        <f:convertNumber pattern="#0.00" locale="en_US" minFractionDigits="2" maxFractionDigits="2"/>
+
                                                     </ice:inputText>
                                                     <h:outputText value=" %"/>
                                                 </h:panelGroup>
@@ -1263,9 +1318,15 @@
                                                     ? '#e67e22' : 'red'};"/>
                                     </td>
                                 </tr>
+
+
                             </tfoot>
 
                         </table>
+
+                        <h:outputText value="Esta Actividad requiere un seguimiento por bajo cumplimiento (Mínimo requerido: #{mttoPao.umbralCumplimiento}%)" 
+                                      rendered="#{not empty mttoPao.evaluacionActual.cumplipct and not empty mttoPao.umbralCumplimiento and mttoPao.evaluacionActual.cumplipct lt mttoPao.umbralCumplimiento}"/>
+
                     </ice:panelGroup>
 
                 </ice:panelGroup>
@@ -1335,23 +1396,29 @@
                                     style="margin-top:5px; background-color:#f4f6f7; border-left:3px solid #5c9ccc; padding:6px;">
 
                         <h:outputText value="Cierres de periodos:" style="font-weight:bold; font-size:10px; color:#2980b9; display:block; margin-bottom:4px;"/>
-                        <h:outputText value="-ENE-MARZO: Cierra el 15 de Abril.  -ENE-JUNIO: Cierra el 15 de Julio.  -ENE-SEPTIEMBRE: Cierra el 15 de Octubre.  -ENE-DICIEMBRE: Cierra el 15 de Enero del próximo año." style="font-size:10px; color:#555; display:block;"/>
+                        <h:outputText value="-ENE-MARZO: Cierra el #{mttoPao.fechaLimiteQ1}.   -ENE-JUNIO: Cierra el #{mttoPao.fechaLimiteQ2}.   -ENE-SEPTIEMBRE: Cierra el #{mttoPao.fechaLimiteQ3}.   -ENE-DICIEMBRE: Cierra el #{mttoPao.fechaLimiteQ4} del próximo año." 
+                                      style="font-size:10px; color:#555; display:block;"/>
                     </ice:panelGroup>
 
+
+
                     <h:panelGrid columns="4" width="100%" cellpadding="6" style="font-size:11px;">
+
+
                         <h:outputLabel value="Periodo Acumulado:" style="font-weight:bold;"/>
-                        <h:panelGroup>
+                        <ice:panelGroup>
+
                             <h:outputText rendered="#{mttoPao.editandoEvaluacionExistente or mttoPao.evaluacionYaRealizada}"
                                           value="#{mttoPao.evaluacionActual.perieval}"
                                           style="font-weight:bold; color:#1a5276; background:#eaf4fb; padding:4px 8px; border-radius:4px; border:1px solid #aed6f1; display:inline-block;"/>
 
-                            <h:selectOneMenu rendered="#{!mttoPao.evaluacionYaRealizada and !mttoPao.editandoEvaluacionExistente and not empty mttoPao.listaPeriodosEvaluacion}"
-                                             value="#{mttoPao.evaluacionActual.perieval}"
-                                             style="width:200px; padding:4px; border:1px solid #ccc; border-radius:3px;">
+                            <ice:selectOneMenu rendered="#{!mttoPao.evaluacionYaRealizada and !mttoPao.editandoEvaluacionExistente and not empty mttoPao.listaPeriodosEvaluacion}"
+                                               value="#{mttoPao.evaluacionActual.perieval}"
+                                               style="width:200px; padding:4px; border:1px solid #ccc; border-radius:3px;"
+                                               partialSubmit="true">
                                 <f:selectItem itemLabel="-- Seleccione Periodo --" itemValue="0"/>
                                 <f:selectItems value="#{mttoPao.listaPeriodosEvaluacion}"/>
-                                <f:ajax event="change" execute="@this" render="panelInfoPeriodo"/>
-                            </h:selectOneMenu>
+                            </ice:selectOneMenu>
 
                             <ice:panelGroup rendered="#{!mttoPao.evaluacionYaRealizada and !mttoPao.editandoEvaluacionExistente and empty mttoPao.listaPeriodosEvaluacion}"
                                             style="background-color:#fdedec; border:1px solid #f5b7b1; padding:8px; border-radius:5px; width:350px;">
@@ -1360,26 +1427,31 @@
                                               style="color:#e74c3c; font-size:10px; display:block;"/>
                             </ice:panelGroup>
 
+                        </ice:panelGroup>
 
-                        </h:panelGroup>
 
                         <h:outputLabel value="Fecha Evaluación:" style="font-weight:bold;"/>
                         <h:panelGroup>
-                            <ace:dateTimeEntry rendered="#{!mttoPao.evaluacionYaRealizada}"
-                                               value="#{mttoPao.evaluacionActual.fchaeval}"
-                                               renderAsPopup="true" pattern="dd/MM/yyyy"/>
-                            <h:outputText rendered="#{mttoPao.evaluacionYaRealizada}"
-                                          value="#{mttoPao.evaluacionActual.fchaeval}"
-                                          style="color:#1a5276; font-weight:bold;">
+
+                            <h:outputText rendered="#{!mttoPao.evaluacionYaRealizada}" 
+                                          value="#{mttoPao.fechaActual}" >
                                 <f:convertDateTime pattern="dd/MM/yyyy"/>
                             </h:outputText>
+
+                            <h:outputText rendered="#{mttoPao.evaluacionYaRealizada}"
+                                          value="#{mttoPao.evaluacionActual.fchaeval}">
+                                <f:convertDateTime pattern="dd/MM/yyyy"/>
+                            </h:outputText>
+
                         </h:panelGroup>
 
-                        <h:outputLabel value="Proyectado (Meta):" style="font-weight:bold;"/>
+                        <h:outputLabel value="Proyectado:" style="font-weight:bold;"/>
+
+
                         <h:panelGroup>
                             <ace:textAreaEntry rendered="#{!mttoPao.evaluacionYaRealizada}"
                                                value="#{mttoPao.evaluacionActual.proyec}"
-                                               rows="3" cols="30" />
+                                               rows="3" cols="30" maxlength="1001"/>
                             <h:outputText rendered="#{mttoPao.evaluacionYaRealizada}"
                                           value="#{mttoPao.evaluacionActual.proyec}"
                                           style="white-space:pre-wrap;"/>
@@ -1389,7 +1461,7 @@
                         <h:panelGroup>
                             <ace:textAreaEntry rendered="#{!mttoPao.evaluacionYaRealizada}"
                                                value="#{mttoPao.evaluacionActual.realiz}"
-                                               rows="3" cols="30" />
+                                               rows="3" cols="30" maxlength="1001"/>
                             <h:outputText rendered="#{mttoPao.evaluacionYaRealizada}"
                                           value="#{mttoPao.evaluacionActual.realiz}"
                                           style="white-space:pre-wrap;"/>
@@ -1399,7 +1471,7 @@
                         <h:panelGroup>
                             <ace:textAreaEntry rendered="#{!mttoPao.evaluacionYaRealizada}"
                                                value="#{mttoPao.evaluacionActual.descriprealiz}"
-                                               rows="3" cols="30" />
+                                               rows="3" cols="30" maxlength="1001"/>
                             <h:outputText rendered="#{mttoPao.evaluacionYaRealizada}"
                                           value="#{mttoPao.evaluacionActual.descriprealiz}"
                                           style="white-space:pre-wrap;"/>
@@ -1409,7 +1481,7 @@
                         <h:panelGroup>
                             <ace:textAreaEntry rendered="#{!mttoPao.evaluacionYaRealizada}"
                                                value="#{mttoPao.evaluacionActual.observ}"
-                                               rows="3" cols="30" />
+                                               rows="3" cols="30" maxlength="1001"/>
                             <h:outputText rendered="#{mttoPao.evaluacionYaRealizada}"
                                           value="#{mttoPao.evaluacionActual.observ}"
                                           style="white-space:pre-wrap; color:#555;"/>
@@ -1451,10 +1523,9 @@
             </h:form>
         </ace:dialog>
 
-
-        <!-- ================================== -->
+        <!-- ================================= -->
         <!-- POP UP CONFIRMACIÓN DE EVALUACIÓN  -->
-        <!-- ================================== -->
+        <!-- ================================= -->
         <ace:dialog id="popupConfirmarEvaluacion"
                     widgetVar="popupConfirmarEvaluacion"
                     header="Confirmar Registro de Evaluación"
@@ -1554,9 +1625,9 @@
             </h:form>
         </ace:dialog>
 
-        <!-- ============================================== -->
+        <!-- ============================================= -->
         <!-- POP UP DE CREACIÓN DE PLANEACIÓN TRIMESTRALES  -->
-        <!-- ============================================== -->
+        <!-- ============================================= -->
         <ace:dialog id="popupTrim" widgetVar="popupTrim" 
                     header="Planificación por Periodo (Meses)" 
                     modal="true" width="900" closable="true" resizable="false" showEffect="slide" hideEffect="slide">
@@ -1639,10 +1710,9 @@
                             <f:selectItem itemLabel="Diciembre" itemValue="12"/>
                         </ace:simpleSelectOneMenu>
                     </h:panelGrid>
-
                     <h:panelGrid columns="1" width="100%" style="margin-top: 5px;">
                         <h:outputLabel value="Actividad Programada:" style="font-weight:bold"/>
-                        <ace:textAreaEntry value="#{mttoPao.detalleTrimActual.activiprogra}" rows="3" cols="80" resizable="false" maxlength="1000"/>
+                        <ace:textAreaEntry value="#{mttoPao.detalleTrimActual.activiprogra}" rows="3" cols="80" resizable="false" maxlength="1001"/>
                     </h:panelGrid>
                 </ice:panelGroup>
 
@@ -1678,9 +1748,9 @@
             </h:form>
         </ace:dialog>
 
-        <!-- ====================================== -->
-        <!-- POP UP RESUMEN GENERAL DE LAS actividades -->
-        <!-- ====================================== -->
+        <!-- ========================================= -->
+        <!-- POP UP RESUMEN GENERAL DE LAS ACTIVIDADES -->
+        <!-- ========================================= -->
         <ace:dialog id="popupDashboard" widgetVar="popupDashboard" 
                     header="Gestión de actividades por Jerarquía Estratégica" 
                     modal="true" width="1000" 
@@ -1786,9 +1856,9 @@
 
         </ace:dialog>
 
-        <!-- ============================================ -->
+        <!-- =========================================== -->
         <!-- POP UP DE EL RESUMEN DE CUMPLIMIENTO POR OE  -->
-        <!-- ============================================ -->
+        <!-- =========================================== -->
         <ace:dialog id="popupResumenOE" widgetVar="popupResumenOE" 
                     header="Cumplimiento de mi PAO" 
                     modal="true" width="900" closable="true" resizable="false" showEffect="slide" hideEffect="slide">
@@ -1894,9 +1964,9 @@
             </h:form>
         </ace:dialog>
 
-        <!-- ====================================================== -->
+        <!-- ===================================================== -->
         <!-- POP UP DE CONFIRMACIÓN DE CAMBIO DE PEP Y ELIMINACIÓN  -->
-        <!-- ====================================================== -->
+        <!-- ===================================================== -->
         <ace:dialog id="popupConfirmarCambioPep" widgetVar="popupConfirmarCambioPep" 
                     header="Confirmación de Cambio de PEP" 
                     modal="true" closable="false" resizable="false" width="400"
@@ -1934,9 +2004,9 @@
             </h:form>
         </ace:dialog>
 
-        <!-- ================================================================= -->
+        <!-- =================================================================== -->
         <!-- POP UP DE CREACION DE SEGUIMIENTO DE actividades CON MAL EVALUACIÓN  -->
-        <!-- ================================================================= -->
+        <!-- =================================================================== -->
         <ace:dialog id="popupSeguimientoForm" widgetVar="popupSeguimiento" 
                     header="Bitácora de Seguimientos" 
                     modal="true" 
@@ -2064,18 +2134,16 @@
 
                 </ace:menuBar>
                 <ice:panelGroup style="padding: 15px;">
-
                     <h:outputLabel value="Descripción de la Iniciativa:" style="font-weight:bold; display:block; margin-bottom: 5px;"/>
-                    <ace:textAreaEntry value="#{mttoPao.iniciativaActual.descrip}" rows="5" cols="60"  maxlength="500" resizable="false"/>
-
+                    <ace:textAreaEntry value="#{mttoPao.iniciativaActual.descrip}" rows="5" cols="60"  maxlength="1001" resizable="false"/>
                 </ice:panelGroup>
 
             </h:form>
         </ace:dialog>
 
-        <!-- ==============================================  -->
+        <!-- =================================================  -->
         <!-- POP UP DE ASOCIACIÓN DE actividades Y INICIATIVAS  -->
-        <!-- ==============================================  -->
+        <!-- =================================================  -->
         <ace:dialog id="popupVincularAcciones" widgetVar="popupVincularAcciones" 
                     header="Vincular actividades a la Iniciativa" 
                     modal="true" width="950"  resizable="false" closable="true">
@@ -2261,10 +2329,9 @@
 
         </ace:dialog>
 
-        <!-- ==================================================  -->
+        <!-- =====================================================  -->
         <!-- POP UP CON EL RESUMEN DE LAS actividades PLANIFICADAS  -->
-        <!-- ==================================================  -->
-
+        <!-- =====================================================  -->
         <ace:dialog id="popupReporteEjecutivo" widgetVar="popupReporteEjecutivo"
                     header="Resumen Plan Anual Operativo por Iniciativa"
                     modal="true" width="1200" closable="true" resizable="false">
@@ -2490,10 +2557,6 @@
                 </ace:tabSet>
             </h:form>
         </ace:dialog>
-
-
-
-
 
         <style>
             .tabla-matriz { width: 100%; border-collapse: collapse; font-size: 11px; }

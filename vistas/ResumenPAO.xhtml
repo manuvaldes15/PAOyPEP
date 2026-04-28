@@ -13,6 +13,24 @@
         <ice:panelGrid width="100%" style="text-align: center; margin-bottom: 10px;">
             <h:outputLabel value="RESUMEN DEL PAO" styleClass="title" style="font-size: 16px; font-weight: bold;"/>
         </ice:panelGrid>
+        
+        
+                <ace:dialog id="dialog" header="Mensajes del Sistema" widgetVar="mensaje"
+                    modal="true" closable="true" draggable="true"
+                    showEffect="slide" hideEffect="slide" dialogPosition="middle" width="350" resizable="false">
+            <h:form id="msgForm">
+
+                <ace:messages id="allMsgsys" showDetail="true" showSummary="false" escape="false"/>
+
+                <center>
+
+                    <h:commandButton value="Aceptar" onclick="mensaje.hide();
+                            return false;" 
+                                     type="button" 
+                                     style="background-color: #5c9ccc; color: white; border: none; padding: 5px 15px; font-weight: bold; cursor: pointer; margin-bottom: 10px;"/>
+                </center>
+            </h:form>
+        </ace:dialog>
 
         <h:form id="frmConsultaPao">
 
@@ -27,7 +45,6 @@
                                           value="Buscar"
                                           icon="ui-icon ui-icon-search"
                                           action="#{consultaEmpleadosPlan.buscarPaos}">
-                                <ace:ajax execute="@form" render="@form"/>
                             </ace:menuItem>
                             <ace:menuItem id="miLimpiarPao"
                                           value="Limpiar"
@@ -71,6 +88,8 @@
                                        selectionMode="single"
                                        rowSelectListener="#{consultaEmpleadosPlan.seleccionarPao}"
                                        style="cursor:pointer;">
+                            
+                            
 
                             <ace:ajax event="select" render="@form"/>
 
@@ -120,28 +139,26 @@
                             </h:panelGrid>
 
                             <h:panelGrid styleClass="centeredPanelGrid" width="100%">
+
                                 <ace:menuBar>
-                                    <ace:menuItem value="Ver PEP"
-                                                  icon="ui-icon ui-icon-script"
-                                                  action="#{consultaEmpleadosPlan.cargarVistaGeneral}"> 
-                                        <ace:ajax execute="@this" 
-                                                  render=":popupResumenPep" 
-                                                  onComplete="popupResumenPep.show();"/>
-                                    </ace:menuItem>
+    <ace:menuItem value="Ver PEP"
+                  icon="ui-icon ui-icon-script"
+                  action="#{consultaEmpleadosPlan.cargarVistaGeneral}"> 
+        <ace:ajax execute="@this" render=":frmResumenPep"/>
+    </ace:menuItem>
 
-                                    <ace:menuItem value="Imprimir Reporte PAO"
-                                                  icon="ui-icon ui-icon-print"
-                                                  action="#{consultaEmpleadosPlan.imprimirResumenPao}">
-                                        <ace:ajax execute="@this" render=":msgForm"/>
-                                    </ace:menuItem>
+    <ace:menuItem value="Imprimir Reporte PAO"
+                  icon="ui-icon ui-icon-print"
+                  action="#{consultaEmpleadosPlan.imprimirResumenPao}">
+        <ace:ajax execute="@this"/>
+    </ace:menuItem>
 
-                                    <ace:menuItem value="Imprimir Reporte PEP"
-                                                  icon="ui-icon ui-icon-print"
-                                                  action="#{consultaEmpleadosPlan.imprimirResumenPep}">
-                                        <ace:ajax execute="@this" render=":msgForm"/>
-                                    </ace:menuItem>
-
-                                </ace:menuBar>
+    <ace:menuItem value="Imprimir Reporte PEP"
+                  icon="ui-icon ui-icon-print"
+                  action="#{consultaEmpleadosPlan.imprimirResumenPep}">
+        <ace:ajax execute="@this"/>
+    </ace:menuItem>
+</ace:menuBar>
 
 
                             </h:panelGrid>
@@ -449,15 +466,14 @@
                 </ace:tabPane>
 
             </ace:tabSet>
-
-            <ace:dialog id="popupResumenPep" widgetVar="popupResumenPep" 
-                        header="Resumen del Plan Estratégico Participativo" 
-                        modal="true" width="1000"
-                        closable="true" resizable="false">
-
-                <h:panelGroup id="panelContenedorPep" layout="block">
-                    <ice:panelGroup style="height: 550px; padding: 10px; background-color: #fff;">
-
+        </h:form> 
+        <ace:dialog id="popupResumenPep" widgetVar="popupResumenPep" 
+                    header="Resumen del Plan Estratégico Participativo" 
+                    modal="true" width="1000"
+                    closable="true" resizable="false">
+            
+            <h:form id="frmResumenPep"> <h:panelGroup id="panelContenedorPep" layout="block">
+                    <ice:panelGroup style="height: 550px; padding: 10px; background-color: #fff; overflow-y: auto;">
 
                         <h:panelGrid columns="4" width="100%" style="margin-bottom: 20px; margin-top: 10px; text-align: center;">
                             <h:panelGroup>
@@ -536,18 +552,13 @@
                             </tbody>
                         </table>
 
-                        <h:panelGroup rendered="#{empty consultaEmpleadosPlan.lstArbolCompleto}" style="text-align: center; padding: 20px;">
+                        <h:panelGroup rendered="#{empty consultaEmpleadosPlan.lstArbolCompleto}" style="display:block; text-align: center; padding: 20px;">
                             <h:outputText value="No se han cargado datos del Plan Estratégico." style="color: #777;"/>
                         </h:panelGroup>
                     </ice:panelGroup>
                 </h:panelGroup>
-            </ace:dialog>
-
-
-        </h:form>
-
-
-
+            </h:form>
+        </ace:dialog>
 
         <style>
             .tabla-matriz { width: 100%; border-collapse: collapse; font-size: 11px; }
@@ -563,7 +574,6 @@
             .badge-ind { background-color: #f39c12; color: white; padding: 1px 3px; border-radius: 3px; font-size: 9px; font-weight: bold; margin-right: 5px; }
 
             .inic-enca th{background-color:#5c9ccc;border:1px solid #ccc;color:white;padding:4px;text-align:center;}
-
         </style>
     </f:view>
 </ui:composition>

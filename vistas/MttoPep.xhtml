@@ -42,7 +42,10 @@
 
                         <ice:panelGrid styleClass="centeredPanelGrid" width="100%">
                             <ace:menuBar id="mbBsqPep">
-                                <ace:menuItem id="miBsqPep" icon="ui-icon ui-icon-search" action="#{mttoPep.buscarPeps()}" value="Buscar"/>
+                                <ace:menuItem id="miBsqPep" icon="ui-icon ui-icon-search" action="#{mttoPep.buscarPeps()}" value="Buscar">
+                                                                    <ace:ajax execute="@form" render="@form :msgForm:allMsgsys "/>
+
+                                </ace:menuItem>
                                 <ace:menuItem id="miLimpiarPep" icon="ui-icon ui-icon-refresh" action="#{mttoPep.limpiarBusqueda()}" value="Limpiar"/>
                             </ace:menuBar>
                         </ice:panelGrid>
@@ -132,7 +135,7 @@
                                                   actionListener="#{mttoPep.prepararAprobacionPep(mttoPep.pep)}"> <ace:ajax execute="@this" render=":popupAprobarPepForm"/>
                                     </ace:menuItem>
 
-                                    <ace:menuItem value="Imprimir Reporte"
+                                    <ace:menuItem value="Imprimir PEP"
                                                   icon="ui-icon ui-icon-print"
                                                   action="#{mttoPep.imprimirResumenPep}"
                                                   rendered="#{mttoPep.pep.idpep != null}">
@@ -383,7 +386,7 @@
                                         <ace:column headerText="Línea Estratégica ">
                                             <h:outputText value="#{est.descrip}"/>
                                         </ace:column>
-                                        <ace:column headerText="Año" style="text-align: center; width: 60px;">
+                                        <ace:column headerText="Año" style="text-align: center; width: 60px;" sortBy="#{est.anio}">
                                             <h:outputText value="#{est.anio}"/>
                                         </ace:column>
                                         <ace:column headerText="Acciones" style="width: 50px; text-align: center;">
@@ -903,8 +906,6 @@
 
             </h:form>
         </ace:dialog>
-
-
 
 
         <style>

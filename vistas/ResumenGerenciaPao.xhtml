@@ -17,6 +17,25 @@
             <h:outputLabel value="RESUMEN GERENCIAL DEL PAO"
                            styleClass="title" style="font-size: 16px; font-weight: bold;"/>
         </h:panelGrid>
+        
+
+
+        <ace:dialog id="dialog" header="Mensajes del Sistema" widgetVar="mensaje"
+                    modal="true" closable="true" draggable="true"
+                    showEffect="slide" hideEffect="slide" dialogPosition="middle" width="350" resizable="false">
+            <h:form id="msgForm">
+
+                <ace:messages id="allMsgsys" showDetail="true" showSummary="false" escape="false"/>
+
+                <center>
+
+                    <h:commandButton value="Aceptar" onclick="mensaje.hide();
+                            return false;" 
+                                     type="button" 
+                                     style="background-color: #5c9ccc; color: white; border: none; padding: 5px 15px; font-weight: bold; cursor: pointer; margin-bottom: 10px;"/>
+                </center>
+            </h:form>
+        </ace:dialog>
 
         <h:form id="frmGerenciaPao">
 
@@ -30,13 +49,12 @@
                                           value="Buscar"
                                           icon="ui-icon ui-icon-search"
                                           action="#{consultaGerenciaPlan.buscarPaos}">
-                                <ace:ajax execute="@form" render="@form"/>
                             </ace:menuItem>
                             <ace:menuItem id="miLimpiarPao"
                                           value="Limpiar"
                                           icon="ui-icon ui-icon-refresh"
                                           action="#{consultaGerenciaPlan.limpiarTodo}">
-                                <ace:ajax execute="@this" render="@form"/>
+                                <ace:ajax execute="@this" render="@form "/>
                             </ace:menuItem>
 
                         </ace:menuBar>
@@ -54,15 +72,14 @@
                             <h:outputLabel value="PEP:" style="font-weight:bold"/>
                             <ace:simpleSelectOneMenu value="#{consultaGerenciaPlan.filtroIdPep}"
                                                      style="width:200px;">
-                                <f:selectItem itemLabel="-- Todos --" itemValue="0"/>
                                 <f:selectItems value="#{consultaGerenciaPlan.listaPeps}"/>
                             </ace:simpleSelectOneMenu>
 
                             <h:outputLabel value="Año del PAO:" style="font-weight:bold"/>
-                            <ace:simpleSelectOneMenu value="#{consultaGerenciaPlan.filtroAnio}"
-                                                     style="width:80px;">
-                                <f:selectItems value="#{consultaGerenciaPlan.listaAnios}"/>
-                            </ace:simpleSelectOneMenu>
+<ace:maskedEntry value="#{consultaGerenciaPlan.filtroAnio}"
+                 mask="9999"
+                 style="width: 80px;"
+                 onkeypress="return soloNumero(event);"/>
 
                             <h:outputLabel value="Agencia:" style="font-weight:bold"/>
                             <ace:simpleSelectOneMenu id="comboAgencias"
@@ -192,93 +209,78 @@
 
                         <div style="height:15px;"/>
 
-                        <table style="width:100%; border-collapse:collapse; font-size:11px;
-                               border:1px solid #ccc; margin-bottom:8px;">
-                            <tr>
-                                <td style="border:1px solid #ccc; padding:8px; text-align:center; width:16%;">
-                                    <div style="font-size:10px; font-weight:bold; ">ACCIONES PLANIFICADAS</div>
-                                    <div style="font-size:22px; font-weight:bold;">
-                                        #{consultaGerenciaPlan.kpiTotalAcciones}
-                                    </div>
-                                </td>
-                                <td style="border:1px solid #ccc; padding:8px; text-align:center; width:16%;">
-                                    <div style="font-size:10px; font-weight:bold; ">NO PLANIFICADAS</div>
-                                    <div style="font-size:22px; font-weight:bold; ">
-                                        #{consultaGerenciaPlan.kpiTotalNoPlanificadas}
-                                    </div>
-                                </td>
-                                <td style="border:1px solid #ccc; padding:8px; text-align:center; width:16%;">
-                                    <div style="font-size:10px; font-weight:bold; ">TOTAL ACCIONES</div>
-                                    <div style="font-size:22px; font-weight:bold; ">
-                                        #{consultaGerenciaPlan.kpiTotalAcciones
-                                          + consultaGerenciaPlan.kpiTotalNoPlanificadas}
-                                    </div>
-                                </td>
-                                <td style="border:1px solid #ccc; padding:8px; text-align:center; width:16%;">
-                                    <div style="font-size:10px; font-weight:bold; ">ACCIONES EVALUADAS</div>
-                                    <div style="font-size:22px; font-weight:bold; ">
-                                        #{consultaGerenciaPlan.kpiTotalAccionesEvaluadas}
-                                    </div>
-                                </td>
-                                <td style="border:1px solid #ccc; padding:8px; text-align:center; width:12%;">
-                                    <div style="font-size:10px; font-weight:bold; ">NO PLAN. EVALUADAS</div>
-                                    <div style="font-size:22px; font-weight:bold; ">
-                                        #{consultaGerenciaPlan.kpiNoPlanificadasEvaluadas}
-                                    </div>
-                                </td>
-                                <td style="border:1px solid #ccc; padding:8px; text-align:center; width:12%;">
-                                    <div style="font-size:10px; font-weight:bold; ">NO PLAN. PENDIENTES</div>
-                                    <div style="font-size:22px; font-weight:bold; ">
-                                        #{consultaGerenciaPlan.kpiNoPlanificadasSinEval}
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
+<ice:panelGrid columns="6" width="100%" cellpadding="8" styleClass="tabla-kpi">
+    <h:panelGroup styleClass="celda-kpi">
+        <h:outputText value="ACCIONES PLANIFICADAS: " styleClass="titulo-kpi"/>
+        <h:outputText value="#{consultaGerenciaPlan.kpiTotalAcciones}" styleClass="valor-kpi"/>
+    </h:panelGroup>
+    
+    <h:panelGroup styleClass="celda-kpi">
+        <h:outputText value="NO PLANIFICADAS: " styleClass="titulo-kpi"/>
+        <h:outputText value="#{consultaGerenciaPlan.kpiTotalNoPlanificadas}" styleClass="valor-kpi"/>
+    </h:panelGroup>
 
-                        <table style="width:100%; border-collapse:collapse; font-size:11px;
-                               border:1px solid #ccc; margin-bottom:8px;">
-                            <tr>
-                                <td style="border:1px solid #ccc; padding:6px; width:25%;
-                                    font-weight:bold; background-color:#f5f5f5; text-align:right;">
-                                    PROMEDIO DE CUMPLIMIENTO:
-                                </td>
-                                <td style="border:1px solid #ccc; padding:6px; width:25%;">
-                                    <ice:outputProgress
-                                        value="#{consultaGerenciaPlan.kpiPromedioCumplimientoInt}"
-                                        style="width:100%;"/>
-                                </td>
-                                <td style="border:1px solid #ccc; padding:6px; width:25%;
-                                    font-weight:bold; background-color:#f5f5f5; text-align:right;">
-                                    PROMEDIO NO PLANEADO:
-                                </td>
-                                <td style="border:1px solid #ccc; padding:6px; width:25%;">
-                                    <ice:outputProgress
-                                        value="#{consultaGerenciaPlan.kpiPromedioNoPlaneadoInt}"
-                                        style="width:100%;"/>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="border:1px solid #ccc; padding:6px;
-                                    font-weight:bold; background-color:#f5f5f5; text-align:right;">
-                                    CUMPLIMIENTO ESPERADO:
-                                </td>
-                                <td style="border:1px solid #ccc; padding:6px;">
-                                    <ice:outputProgress
-                                        value="#{consultaGerenciaPlan.kpiCumplimientoEsperadoInt}"
-                                        style="width:100%;"/>
-                                </td>
-                                <td style="border:1px solid #ccc; padding:6px;
-                                    font-weight:bold; background-color:#f5f5f5; text-align:right;">
-                                    PROMEDIO TOTAL:
-                                </td>
-                                <td style="border:1px solid #ccc; padding:6px;">
-                                    <ice:outputProgress
-                                        value="#{consultaGerenciaPlan.kpiPromedioTotalInt}"
-                                        style="width:100%;"/>
-                                </td>
-                            </tr>
-                        </table>
+    <h:panelGroup styleClass="celda-kpi">
+        <h:outputText value="TOTAL ACCIONES: " styleClass="titulo-kpi"/>
+        <h:outputText value="#{consultaGerenciaPlan.kpiTotalAcciones + consultaGerenciaPlan.kpiTotalNoPlanificadas}" styleClass="valor-kpi"/>
+    </h:panelGroup>
 
+    <h:panelGroup styleClass="celda-kpi">
+        <h:outputText value="ACCIONES EVALUADAS: " styleClass="titulo-kpi"/>
+        <h:outputText value="#{consultaGerenciaPlan.kpiTotalAccionesEvaluadas}" styleClass="valor-kpi"/>
+    </h:panelGroup>
+
+    <h:panelGroup styleClass="celda-kpi">
+        <h:outputText value="NO PLAN. EVALUADAS: " styleClass="titulo-kpi"/>
+        <h:outputText value="#{consultaGerenciaPlan.kpiNoPlanificadasEvaluadas}" styleClass="valor-kpi"/>
+    </h:panelGroup>
+
+    <h:panelGroup styleClass="celda-kpi">
+        <h:outputText value="NO PLAN. PENDIENTES: " styleClass="titulo-kpi"/>
+        <h:outputText value="#{consultaGerenciaPlan.kpiNoPlanificadasSinEval}" styleClass="valor-kpi"/>
+    </h:panelGroup>
+</ice:panelGrid>
+
+<ice:panelGrid columns="4" width="100%" cellpadding="6" styleClass="tabla-kpi" 
+               columnClasses="col-titulo, col-progreso, col-titulo, col-progreso">
+    
+    <h:outputText value="PROMEDIO CUMPLIMIENTO ACTIVIDADES: " styleClass="titulo-kpi-der"/>
+    <ice:outputProgress value="#{consultaGerenciaPlan.kpiPromedioCumplimientoInt}" style="width:100%;"/>
+
+    <h:outputText value="PROMEDIO CUMPLIMIENTO ACTIVIDADES NO PLAN: " styleClass="titulo-kpi-der"/>
+    <ice:outputProgress value="#{consultaGerenciaPlan.kpiPromedioNoPlaneadoInt}" style="width:100%;"/>
+
+    <h:outputText value="CUMPLIMIENTO ESPERADO: " styleClass="titulo-kpi-der"/>
+    <ice:outputProgress value="#{consultaGerenciaPlan.kpiCumplimientoEsperadoInt}" style="width:100%;"/>
+
+    <h:outputText value="PROMEDIO TOTAL: " styleClass="titulo-kpi-der"/>
+    <ice:outputProgress value="#{consultaGerenciaPlan.kpiPromedioTotalInt}" style="width:100%;"/>
+    
+</ice:panelGrid>
+
+                        <ice:panelGroup style="padding: 10px; border: 1px solid #ddd; background-color: #fcfcfc; margin-bottom: 10px; display: block;">
+    <ice:panelGrid columns="4" cellpadding="5" style="width: 100%; align-items: center;">
+        
+        <h:outputLabel value="Filtro para Reporte de Seguimiento:" style="font-weight: bold; color: #333;"/>
+        
+        <ice:panelGrid columns="2" cellpadding="3">
+            <h:outputLabel value="Periodo:" style="font-size: 11px; font-weight: bold;"/>
+            
+            <ace:simpleSelectOneMenu value="#{consultaGerenciaPlan.periodoFiltroReporte}" style="width: 220px;">
+                <f:selectItems value="#{consultaGerenciaPlan.listaPeriodosFiltro}"/>
+            </ace:simpleSelectOneMenu>
+            
+        </ice:panelGrid>
+
+        <ace:pushButton value="Imprimir Seguimientos" 
+                        action="#{consultaGerenciaPlan.imprimirSeguimientos}">
+            <ace:ajax execute="@form" render="@none"/>
+        </ace:pushButton>
+
+    </ice:panelGrid>
+</ice:panelGroup>
+                        
+                        
                         <ace:tabSet clientSide="false" style="width:100%;">
 
                             <ace:tabPane label="Sin Acciones con Iniciativas vinculadas"
@@ -293,7 +295,7 @@
                                 </div>
                             </ace:tabPane>
 
-                            <c:forEach items="#{consultaEmpleadosPlan.listaResumen}" var="persp">
+                            <c:forEach items="#{consultaGerenciaPlan.listaResumen}" var="persp">
                                 <ace:tabPane label="#{persp.nombrePerspectiva}">
 
                                     <div style="overflow-x: auto; overflow-y: auto; padding: 10px; width: 100%;">
