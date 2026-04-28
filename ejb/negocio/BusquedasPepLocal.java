@@ -155,6 +155,8 @@ List<Plnpaoinic> buscarIniciativasPorPepYCoordinador(
         List<Plnaccionseguimiento> obtenerHistorialSeguimientos
         (BigInteger idAccion
         );
+        
+        List<Plnaccionseguimiento> buscarSeguimientosPorPao(BigInteger idPao) throws Exception;
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="MÓDULO EMPLEADOS">

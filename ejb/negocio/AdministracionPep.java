@@ -214,6 +214,7 @@ public class AdministracionPep implements AdministracionPepLocal {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error al guardar PEP: " + e.getMessage(), e);
             throw new Exception(e.getMessage());
         }
     }
@@ -244,7 +245,7 @@ public class AdministracionPep implements AdministracionPepLocal {
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Error al Eliminar un PEP");
-            throw new Exception("Error al eliminar PEP: " + e.getMessage());
+            throw new Exception(e.getMessage());
         }
     }
 
@@ -312,6 +313,7 @@ public class AdministracionPep implements AdministracionPepLocal {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error al guardar Perspectiva: " + e.getMessage(), e);
             throw new Exception(e.getMessage());
         }
     }
@@ -687,6 +689,7 @@ public class AdministracionPep implements AdministracionPepLocal {
         //validarBloqueoPep(idPep);
 
         try {
+            LOG.log(Level.INFO, "Iniciando guardado de Línea Estratégica. ID PEP asociado: {0}", idPep);
             if (est.getDescrip() != null) {
                 est.setDescrip(est.getDescrip().trim());
             }
@@ -723,6 +726,7 @@ public class AdministracionPep implements AdministracionPepLocal {
     @Override
     public void eliminarEstrategia(Plnpeplinestr est) throws Exception {
         try {
+            LOG.log(Level.INFO, "Se empezo a eliminar Línea Estratégica ID: {0}", est.getIdestrategia());
             Plnpeplinestr ref = em.find(Plnpeplinestr.class, est.getIdestrategia());
             if (ref != null) {
                 if (ref.getIdindicadorcump() != null
@@ -780,10 +784,11 @@ public class AdministracionPep implements AdministracionPepLocal {
             if (e instanceof javax.validation.ConstraintViolationException) {
                 javax.validation.ConstraintViolationException cve = (javax.validation.ConstraintViolationException) e;
                 for (javax.validation.ConstraintViolation<?> cv : cve.getConstraintViolations()) {
-                    System.out.println("ERROR JPA: Campo " + cv.getPropertyPath() + " " + cv.getMessage());
+                    LOG.log(Level.SEVERE, "Error de persistencia (JPA) al guardar Iniciativa: " + cv.getMessage());
                 }
             }
-            throw new Exception("Error al guardar la iniciativa: " + e.getMessage());
+            LOG.log(Level.SEVERE, "Error general al guardar Iniciativa", e);
+            throw new Exception(e.getMessage());
         }
     }
 
@@ -885,6 +890,7 @@ public class AdministracionPep implements AdministracionPepLocal {
     @Override
     public void guardarPao(Plnpao pao, String usuario) throws Exception {
         try {
+            LOG.log(Level.INFO, "Validando reglas de negocio para guardar PAO del año: {0}", pao.getAnio());
             if (pao.getNombrepao() != null) {
                 pao.setNombrepao(pao.getNombrepao().trim());
             }
@@ -914,6 +920,7 @@ public class AdministracionPep implements AdministracionPepLocal {
             }
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error al guardar el Plan Anual Operativo (PAO): " + e.getMessage(), e);
             throw new Exception("Error al guardar PAO: " + e.getMessage());
         }
     }
@@ -937,6 +944,7 @@ public class AdministracionPep implements AdministracionPepLocal {
             }
 
             BigInteger idPao = pao.getIdpao();
+            LOG.log(Level.INFO, "Iniciando borrado en cascada (Seguimientos, Evaluaciones, Acciones) para el PAO ID: {0}", idPao);
 
             // ── 1. Borrar seguimientos de las acciones del PAO ──
             em.createQuery(
@@ -989,6 +997,7 @@ public class AdministracionPep implements AdministracionPepLocal {
 
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Fallo al ejecutar borrado en cascada del PAO ID: " + pao.getIdpao(), e);
             throw e;
         }
     }
@@ -1249,7 +1258,8 @@ public class AdministracionPep implements AdministracionPepLocal {
             trim.setFchamod(new java.util.Date());
             em.merge(trim);
         } catch (Exception e) {
-            throw new RuntimeException("Error al guardar cumplimiento trimestral: " + e.getMessage(), e);
+            LOG.log(Level.SEVERE, "Error al guardar el % de cumplimiento trimestral", e);
+            throw new RuntimeException("Error al guardar el % cumplimiento trimestral: " + e.getMessage(), e);
         }
 
     }
@@ -1330,6 +1340,8 @@ public class AdministracionPep implements AdministracionPepLocal {
      */
     @Override
     public void aprobarPepGerencia(Plnpep pep, String usuario) throws Exception {
+        LOG.log(Level.INFO, "Aprobando PEP ID: {0} con Acta No: {1}", new Object[]{pep.getIdpep(), pep.getNumacta()});
+        
         Plnpep p = em.find(Plnpep.class, pep.getIdpep());
 
         p.setNumacta(pep.getNumacta());
@@ -1355,6 +1367,8 @@ public class AdministracionPep implements AdministracionPepLocal {
      */
     @Override
     public void aprobarPresupuestoAccion(Plnacciondeta accion, String usuario) throws Exception {
+        LOG.log(Level.INFO, "Aprobando presupuesto para la Acción PAO ID: {0}", accion.getIdaccionpao());
+        
         Plnacciondeta a = em.find(Plnacciondeta.class, accion.getIdaccionpao());
 
         a.setPresuaprob(accion.getPresuaprob());
@@ -1376,6 +1390,8 @@ public class AdministracionPep implements AdministracionPepLocal {
      */
     @Override
     public void cerrarPaoGerencia(Plnpao pao, Integer idActa, String usuario) throws Exception {
+        LOG.log(Level.INFO, "Cerrando PAO ID: {0} con Acta de cierre ID: {1}", new Object[]{pao.getIdpao(), idActa});
+        
         Plnpao p = em.find(Plnpao.class, pao.getIdpao());
 
         p.setIdacta(idActa);

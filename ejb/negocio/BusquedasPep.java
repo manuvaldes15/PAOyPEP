@@ -50,6 +50,8 @@ import javax.persistence.Query;
  */
 @Stateless
 public class BusquedasPep implements BusquedasPepLocal {
+    
+    private static final Logger LOG = Logger.getLogger(BusquedasPep.class.getName());
 
     @PersistenceContext(unitName = "BankSys-ejbPU")
     private EntityManager em;
@@ -123,6 +125,7 @@ public class BusquedasPep implements BusquedasPepLocal {
         } catch (NoResultException nre) {
             return new ArrayList<Plnpep>();
         } catch (Exception ex) {
+            LOG.log(Level.INFO, "Ejecutando búsqueda dinámica de PEPs con los filtros proporcionados.");
             Logger.getLogger(BusquedasPep.class.getName()).log(Level.SEVERE, "Error buscarPeps: {0}", ex);
             throw ex;
         }
@@ -149,6 +152,7 @@ public class BusquedasPep implements BusquedasPepLocal {
             Long cantidad = (Long) q.getSingleResult();
             return cantidad > 0;
         } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Error de BD al verificar PAOs asociados para el PEP ID: " + idPep, e);
             e.printStackTrace();
             return false;
         }
@@ -282,6 +286,7 @@ public class BusquedasPep implements BusquedasPepLocal {
             lista = q.getResultList();
 
         } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Error al consultar Objetivos Estrategicos de la Perspectiva ID: " + idPerspectiva, e);
             e.printStackTrace();
             return new ArrayList<Plnpepobjetivo>();
         }
@@ -462,7 +467,7 @@ public class BusquedasPep implements BusquedasPepLocal {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Error en obtenerResumenPorEstrategia: " + e.getMessage());
+            LOG.log(Level.SEVERE, "Error al armar el DTO de Resumen Jerárquico para la Estrategia ID: " + idEstrategia, e);
             dto.setAccion("Error al cargar jerarquía.");
         }
 
@@ -527,7 +532,7 @@ public class BusquedasPep implements BusquedasPepLocal {
             return q.getResultList();
 
         } catch (Exception e) {
-            System.out.println("Error buscando iniciativas por PEP: " + e.getMessage());
+            LOG.log(Level.SEVERE, "Error en la consulta de iniciativas vinculadas al PEP ID: " + idPep, e);
             return new ArrayList<>();
         }
     }
@@ -644,6 +649,7 @@ public class BusquedasPep implements BusquedasPepLocal {
                     .getResultList();
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error al filtrar iniciativas por coordinador ID: " + codCoordinador, e);
             return new ArrayList<>();
         }
     }
@@ -666,6 +672,7 @@ public class BusquedasPep implements BusquedasPepLocal {
                     .getResultList();
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error al filtrar iniciativas por coordinador ID: " + codCoordinador, e);
             return new ArrayList<>();
         }
     }
@@ -681,6 +688,8 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
     List<ReporteIniciativaDTO> resultado = new ArrayList<>();
 
     try {
+        LOG.log(Level.INFO, "Generando Reporte DTO de Iniciativas para el Coordinador ID: {0}", codCoordinador);
+        
         if (codCoordinador == null) {
             return resultado;
         }
@@ -709,6 +718,7 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
                         .getSingleResult();
             } catch (Exception ex) {
                 ex.printStackTrace();
+                LOG.log(Level.SEVERE, "Error al contar acciones de la iniciativa ID: " + inic.getIdiniciativa(), ex);
             }
 
             // Total de PAOs distintos que tienen acciones en esta iniciativa
@@ -723,6 +733,8 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
                         .getSingleResult();
             } catch (Exception ex) {
                 ex.printStackTrace();
+                LOG.log(Level.SEVERE, "Error al contar PAOs distintos de la iniciativa ID: " + inic.getIdiniciativa(), ex);
+
             }
 
             dto.setTotalAcciones(totalAcciones.intValue());
@@ -733,6 +745,7 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
 
     } catch (Exception e) {
         e.printStackTrace();
+        LOG.log(Level.SEVERE, "Error al construir el reporte de iniciativas para el coordinador ID: " + codCoordinador, e);
     }
 
     return resultado;
@@ -844,6 +857,7 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
             return q.getResultList();
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error en la consulta de filtrado de PAOs", e);
             return new ArrayList<Plnpao>();
         }
     }
@@ -877,6 +891,7 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
             }
             return null;
         } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Error en la consulta de filtrado de PAOs", e);
             e.printStackTrace();
             return null;
         }
@@ -912,6 +927,7 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
             }
             return null;
         } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Error en la consulta de filtrado de PAOs", e);
             e.printStackTrace();
             return null;
         }
@@ -930,6 +946,9 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
      */
     @Override
     public List<Plnpao> buscarPaosDinamico(Map<String, Object> filtros) throws Exception {
+        LOG.log(Level.INFO, "Ejecutando búsqueda avanzada de PAOs. Filtros recibidos: Año={0}, PEP={1}, Coordinador={2}", 
+        new Object[]{filtros.get("anio"), filtros.get("idPep"), filtros.get("nombreCoord")});
+        
         StringBuilder jpql = new StringBuilder();
         Map<String, Object> params = new HashMap<String, Object>();
 
@@ -1073,6 +1092,7 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
             return count > 0;
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error al validar existencia de evaluaciones para la Acción ID: " + idAccion, e);
             throw new Exception("Error al verificar evaluaciones: " + e.getMessage());
         }
     }
@@ -1087,6 +1107,7 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
             return count > 0;
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error al validar de seguimientos para la Acción ID: " + idAccion, e);
             throw new Exception("Error al verificar seguimientos: " + e.getMessage());
         }
     }
@@ -1101,6 +1122,7 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
             return count > 0;
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error al validar existencia de vinculaciones a una iniciativa para la Acción ID: " + idAccion, e);
             throw new Exception("Error al verificar vínculos con iniciativas: " + e.getMessage());
         }
     }
@@ -1203,7 +1225,7 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
             Query q = em.createQuery(jpql);
             q.setParameter("id", idAccion);
             q.setHint("eclipselink.refresh", "true");
-            q.setMaxResults(1); // ← tomar solo la primera
+            q.setMaxResults(1);
             List<Plnaccioneval> lista = q.getResultList();
             return lista.isEmpty() ? null : lista.get(0);
         } catch (Exception e) {
@@ -1293,7 +1315,9 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
     @Override
     public List<Plnaccionseguimiento> obtenerHistorialSeguimientos(BigInteger idAccion) {
         try {
-            String sql = "SELECT s FROM Plnaccionseguimiento s WHERE s.idaccionpao.idaccionpao = :idAccion ORDER BY s.fchacrea DESC";
+            String sql = "SELECT s FROM Plnaccionseguimiento "
+                    + "s WHERE s.idaccionpao.idaccionpao = :idAccion "
+                    + "ORDER BY s.fchacrea DESC";
 
             Query q = em.createQuery(sql);
             q.setParameter("idAccion", idAccion);
@@ -1304,6 +1328,18 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
             return new ArrayList<Plnaccionseguimiento>();
         }
     }
+    
+    @Override
+    public List<Plnaccionseguimiento> buscarSeguimientosPorPao(BigInteger idPao) throws Exception {
+    String jpql = "SELECT s FROM Plnaccionseguimiento s " +
+                  "JOIN s.idaccionpao a " +
+                  "WHERE a.idpao.idpao = :idPao " +
+                  "ORDER BY s.fchacrea DESC";
+    
+    return em.createQuery(jpql, Plnaccionseguimiento.class)
+             .setParameter("idPao", idPao)
+             .getResultList();
+}
 
     // ========================================================================
     // MÓDULOS TRANSVERSALES - EMPLEADOS
@@ -1385,6 +1421,7 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
             return q.getResultList();
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error al ejecutar Vista SQL ", e);
             return new ArrayList<>();
         }
     }
@@ -1405,6 +1442,7 @@ public List<ReporteIniciativaDTO> buscarResumenIniciativasPorCoordinador(
             return ejecutarQueryNativo(sql, idPep);
         } catch (Exception e) {
             e.printStackTrace();
+            LOG.log(Level.SEVERE, "Error al ejecutar Vista SQL", e);
             return new ArrayList<Object[]>();
         }
     }
