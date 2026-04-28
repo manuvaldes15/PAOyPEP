@@ -1,5 +1,7 @@
 package com.coop1.soficoop.pln.negocio;
 
+import com.coop1.banksys.general.constantes.CorPantallas;
+import com.coop1.banksys.general.constantes.Modulo;
 import com.coop1.banksys.general.excepciones.ValidacionExcepcion;
 import com.coop1.banksys.general.utilidades.web.ValidaDatos;
 import com.coop1.banksys.login.entidades.Segsesion;
@@ -30,6 +32,9 @@ import javax.servlet.http.HttpServletRequest;
 import org.icefaces.ace.event.RowEditEvent;
 import org.icefaces.ace.event.SelectEvent;
 import org.icefaces.ace.model.table.RowStateMap;
+import com.coop1.banksys.general.entidades.Genconfig;
+import com.coop1.banksys.general.negocio.BusquedaGenLocal;
+import java.util.logging.Level;
 
 /**
  * Managed Bean para el Mantenimiento del Módulo PAO (Plan Anual Operativo).
@@ -49,7 +54,8 @@ public class MttoPao implements Serializable {
     private static final int DEL_ACCION = 2;
     private static final int DEL_TAREA = 3;
     private static final int DEL_INICIATIVA = 4;
-    private static final BigDecimal UMBRAL_CUMPLIMIENTO = new BigDecimal(80); // 
+    private static final BigDecimal UMBRAL_CUMPLIMIENTO = new BigDecimal(80);//PONER EN GENCONFIG PARA EL UMBRAL DEL CUMPLIMIENTO 
+    private static final int MAX_LONGITUD_TEXTO = 1000;
     private static final long serialVersionUID = 1L;
     //</editor-fold>
     //<editor-fold defaultstate="collapsed" desc="EJBs y Sesión">
@@ -57,6 +63,8 @@ public class MttoPao implements Serializable {
     private BusquedasPepLocal busqPep;
     @EJB
     private AdministracionPepLocal adminPep;
+    @EJB
+    private BusquedaGenLocal busqGen;
     @EJB
     private BusquedasRhuLocal busqRhu;
     @ManagedProperty(value = "#{login.sesion}")
@@ -71,6 +79,36 @@ public class MttoPao implements Serializable {
     private boolean nuevoPao = false;
     private boolean panelEvaluacionVisible = false;
     private boolean editandoAccion = false;
+    
+    private BigDecimal umbralCumplimiento;
+    private String fechaLimiteQ1;
+    private String fechaLimiteQ2;
+    private String fechaLimiteQ3;
+    private String fechaLimiteQ4;
+
+    public String getFechaLimiteQ1() {
+        return fechaLimiteQ1;
+    }
+
+    public String getFechaLimiteQ2() {
+        return fechaLimiteQ2;
+    }
+
+    public String getFechaLimiteQ3() {
+        return fechaLimiteQ3;
+    }
+
+    public String getFechaLimiteQ4() {
+        return fechaLimiteQ4;
+    }
+    
+    public java.util.Date getFechaActual() {
+        return new java.util.Date();
+    }
+    
+    
+
+
     //</editor-fold>
     //<editor-fold defaultstate="collapsed" desc="Variables RHU y Contexto Usuario">
     private BigInteger miCodemp;
@@ -117,6 +155,7 @@ public class MttoPao implements Serializable {
     private Plnaccionsinplan accionNoPlanActual = new Plnaccionsinplan();
     private List<Plnaccionsinplan> listaNoPlanificadasEvaluadas = new ArrayList<Plnaccionsinplan>();
     //</editor-fold>
+    
     //<editor-fold defaultstate="collapsed" desc="Variables Evaluaciones">
     private Plnaccioneval evaluacionActual = new Plnaccioneval();
     private List<Plnacciondeta> listaAccionesParaEvaluar = new ArrayList<Plnacciondeta>();
@@ -154,6 +193,10 @@ public class MttoPao implements Serializable {
     //<editor-fold defaultstate="collapsed" desc="Variables Seguimientos">
     private Plnaccionseguimiento seguimientoActual = new Plnaccionseguimiento();
     private List<Plnaccionseguimiento> historialSeguimientos = new ArrayList<Plnaccionseguimiento>();
+    private List<Plnacciondeta> listaCriticasPendientes = new ArrayList<Plnacciondeta>();
+    private List<Plnaccionseguimiento> listaSeguimientosYaRealizados = new ArrayList<Plnaccionseguimiento>();
+    private List<Plnacciondeta> listaAccionesBajoCumplimiento = new ArrayList<Plnacciondeta>();
+    public String periodoFiltroReporte;
     //</editor-fold>
     //<editor-fold defaultstate="collapsed" desc="Variables Planificación Trimestral">
     private List<Plnaccidetplantrim> listaDetallesTrim = new ArrayList<Plnaccidetplantrim>();
@@ -205,9 +248,11 @@ public class MttoPao implements Serializable {
     @PostConstruct
     public void init() {
         inicializarEstructuras();
+        cargarConfiguracionesBD();
         cargarContextoUsuario();
         cargarPaosDelUsuario();
         cargarPeps();
+        getListaResumenIniciativas();
         listaAcciones.clear();
         listaNoPlanificadas.clear();
     }
@@ -227,10 +272,16 @@ public class MttoPao implements Serializable {
         listaObjetivos = new ArrayList<SelectItem>();
         listaIndicadores = new ArrayList<SelectItem>();
         listaEstrategias = new ArrayList<SelectItem>();
-
+        
         panelAccionesVisible = false;
         cambiarTagPanel = 0;
         smPao = new RowStateMap();
+        
+        //    this.umbralCumplimiento = new BigDecimal("80");
+        //    this.fechaLimiteQ1 = "15/04";
+        //    this.fechaLimiteQ2 = "15/07";
+        //    this.fechaLimiteQ3 = "15/10";
+        //    this.fechaLimiteQ4 = "15/01";
     }
     //</editor-fold>
 
@@ -314,7 +365,19 @@ public class MttoPao implements Serializable {
     /**
      * BUSCA PAO APLICANDO FILTROS (AÑO, PEP, NOMBRE).
      */
+    
+    private void limpiarMensajesJSF() {
+        FacesContext context = FacesContext.getCurrentInstance();
+        Iterator<FacesMessage> it = context.getMessages();
+        while (it.hasNext()) {
+            it.next();
+            it.remove();
+        }
+    }
+    
     public void buscarPaos() {
+        
+        limpiarMensajesJSF();
         listaPaos.clear();
         try {
             if (miCodemp != null) {
@@ -325,8 +388,9 @@ public class MttoPao implements Serializable {
 
                 if (res != null) {
                     listaPaos.addAll(res);
-                } else {
-                    showMsg("No se encontraron resultados con los filtros aplicados.", ValidaDatos.INFO);
+                }
+                if (listaPaos==null || listaPaos.isEmpty()) {
+                    showMsg("No se encontraron PAOS con los filtros aplicados.", ValidaDatos.INFO);
                 }
             }
         } catch (Exception e) {
@@ -339,6 +403,7 @@ public class MttoPao implements Serializable {
      * LIMPIA LOS FILTROS DE BÚSQUEDA DE PAO.
      */
     public void limpiarBusquedaPao() {
+        limpiarMensajesJSF();
         this.filtroAnioPao = null;
         this.filtroIdPepPao = null;
         buscarPaos();
@@ -387,6 +452,7 @@ public class MttoPao implements Serializable {
 
         cargarAccionesParaEvaluar();
         setCambiarTagPanel(1);
+        getListaResumenIniciativas();
     }
 
     /**
@@ -1183,6 +1249,14 @@ public class MttoPao implements Serializable {
                 this.showMsg("El PAO está aprobado. No se pueden modificar las acciones planificadas.", ValidaDatos.WARNING);
                 return;
             }
+
+            if (!validarLongitudCampo(accion.getDescrip(), "Descripción", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+            if (!validarLongitudCampo(accion.getMedioverifi(), "Medio de Verificación", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+
             if (accion.getDescrip() != null) {
                 accion.setDescrip(accion.getDescrip().trim());
             }
@@ -1229,7 +1303,7 @@ public class MttoPao implements Serializable {
             adminPep.guardarAccionPao(accion, user);
 
             cargarAcciones();
-            cargarAccionesParaEvaluar();
+            //cargarAccionesParaEvaluar();
 
             this.showMsg(editandoAccion ? "Actividad actualizada." : "Actividad creada.", ValidaDatos.INFO);
             JavascriptContext.addJavascriptCall(FacesContext.getCurrentInstance(), "popupAccion.hide();");
@@ -1603,84 +1677,83 @@ public class MttoPao implements Serializable {
      *
      * Las acciones no planificadas NO tienen tabla de seguimiento.
      */
-    public void cargarAccionesParaEvaluar() {
-        listaAccionesParaEvaluar = new ArrayList<Plnacciondeta>();
-        listaEvaluacionesRealizadas = new ArrayList<Plnaccioneval>();
-        listaNoPlanificadas = new ArrayList<Plnaccionsinplan>();
-        listaNoPlanificadasEvaluadas = new ArrayList<Plnaccionsinplan>();
+public void cargarAccionesParaEvaluar() {
+    listaAccionesParaEvaluar = new ArrayList<Plnacciondeta>();
+    listaEvaluacionesRealizadas = new ArrayList<Plnaccioneval>();
+    //listaNoPlanificadas = new ArrayList<Plnaccionsinplan>();
+    listaNoPlanificadasEvaluadas = new ArrayList<Plnaccionsinplan>();
+    
+    listaCriticasPendientes.clear();
+    listaSeguimientosYaRealizados.clear();
 
-        if (paoActual == null || paoActual.getIdpao() == null) {
-            cargarCombosEvaluacion();
-            aplicarFiltrosEvaluacion(null);
-            return;
-        }
-
-        try {
-            // ── ACCIONES PLANIFICADAS ──
-            List<Plnacciondeta> todas = busqPep.buscarAccionesPorPao(paoActual.getIdpao());
-
-            // Periodos habilitados según fecha actual
-            cargarPeriodosEvaluacionPermitidos();
-            int totalPeriodosHabilitados = listaPeriodosEvaluacion.size();
-
-            if (todas != null) {
-                for (Plnacciondeta ax : todas) {
-
-                    // Obtener todas las evaluaciones ya registradas para esta acción
-                    List<Plnaccioneval> evalsDeAccion =
-                            busqPep.buscarEvaluacionesPorAccion(ax.getIdaccionpao());
-
-                    // ── Agregar a "YA EVALUADAS" cada evaluación existente ──
-                    if (evalsDeAccion != null && !evalsDeAccion.isEmpty()) {
-                        listaEvaluacionesRealizadas.addAll(evalsDeAccion);
-                    }
-
-                    // ── Determinar si aún tiene periodos pendientes ──
-                    // Una acción va a "PENDIENTES" si el nº de evaluaciones
-                    // registradas es menor al nº de periodos habilitados
-                    int evaluacionesRegistradas = (evalsDeAccion != null)
-                            ? evalsDeAccion.size() : 0;
-
-                    if (evaluacionesRegistradas < totalPeriodosHabilitados) {
-                        // Todavía tiene periodos sin evaluar
-                        listaAccionesParaEvaluar.add(ax);
-                    }
-                    // Si evaluacionesRegistradas == totalPeriodosHabilitados
-                    // → todos los periodos habilitados ya fueron evaluados
-                    // → NO aparece en pendientes
-                }
-            }
-
-            // ── ACCIONES NO PLANIFICADAS ── (lógica sin cambios)
-            List<Plnaccionsinplan> todasNoPlan =
-                    busqPep.buscarAccionesNoPlanificadas(paoActual.getIdpao());
-
-            if (todasNoPlan != null) {
-                for (Plnaccionsinplan np : todasNoPlan) {
-                    if (np.getCumplipct() != null
-                            && np.getCumplipct().compareTo(BigDecimal.ZERO) > 0) {
-                        listaNoPlanificadasEvaluadas.add(np);
-                    } else {
-                        listaNoPlanificadas.add(np);
-                    }
-                }
-            }
-
-            this.listaAccionesParaEvaluarMaster =
-                    new ArrayList<Plnacciondeta>(listaAccionesParaEvaluar);
-
-            this.filtroIdPerspectiva = null;
-            this.filtroIdObjetivo = null;
-            this.filtroIdIndicador = null;
-            this.filtroIdEstrategia = null;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+    if (paoActual == null || paoActual.getIdpao() == null) {
         cargarCombosEvaluacion();
         aplicarFiltrosEvaluacion(null);
+        return;
     }
+
+    try {
+        //Cargar Seguimientos que YA existen en la BD para este PAO
+        this.listaSeguimientosYaRealizados = busqPep.buscarSeguimientosPorPao(paoActual.getIdpao());
+
+        // Procesar Acciones Planificadas
+        List<Plnacciondeta> todas = busqPep.buscarAccionesPorPao(paoActual.getIdpao());
+        cargarPeriodosEvaluacionPermitidos();
+        int totalPeriodosHabilitados = listaPeriodosEvaluacion.size();
+
+        if (todas != null) {
+            for (Plnacciondeta ax : todas) {
+                List<Plnaccioneval> evalsDeAccion = busqPep.buscarEvaluacionesPorAccion(ax.getIdaccionpao());
+
+                if (evalsDeAccion != null && !evalsDeAccion.isEmpty()) {
+                    listaEvaluacionesRealizadas.addAll(evalsDeAccion);
+                    
+                    // --- LÓGICA DE SEGUIMIENTO ---
+                    Plnaccioneval ultima = evalsDeAccion.get(evalsDeAccion.size() - 1);
+                    if (ultima.getCumplipct() != null && ultima.getCumplipct().compareTo(this.umbralCumplimiento) < 0) {
+                        
+                        // Verificamos si esta acción ya tiene un seguimiento registrado
+                        boolean tieneSeguimiento = false;
+                        for(Plnaccionseguimiento s : listaSeguimientosYaRealizados) {
+                            if(s.getIdaccionpao().getIdaccionpao().equals(ax.getIdaccionpao())) {
+                                tieneSeguimiento = true;
+                                break;
+                            }
+                        }
+                        
+                        // Si está reprobada y NO tiene seguimiento, va a la lista de "Por corregir"
+                        if (!tieneSeguimiento) {
+                            ax.setUltimaEvaluacion(ultima); 
+                            listaCriticasPendientes.add(ax);
+                        }
+                    }
+                }
+
+                // Lógica de pendientes de evaluación (la original)
+                int evalsRegistradas = (evalsDeAccion != null) ? evalsDeAccion.size() : 0;
+                if (evalsRegistradas < totalPeriodosHabilitados) {
+                    listaAccionesParaEvaluar.add(ax);
+                }
+            }
+        }
+
+        // Acciones no planificadas
+        List<Plnaccionsinplan> todasNoPlan = busqPep.buscarAccionesNoPlanificadas(paoActual.getIdpao());
+        if (todasNoPlan != null) {
+            for (Plnaccionsinplan np : todasNoPlan) {
+                if (np.getCumplipct() != null && np.getCumplipct().compareTo(BigDecimal.ZERO) > 0) {
+                    listaNoPlanificadasEvaluadas.add(np);
+                } 
+            }
+        }
+
+        this.listaAccionesParaEvaluarMaster = new ArrayList<Plnacciondeta>(listaAccionesParaEvaluar);
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+    cargarCombosEvaluacion();
+    aplicarFiltrosEvaluacion(null);
+}
 
     /**
      * PREPARA EL POPUP PARA EVALUAR UNA ACCIÓN.
@@ -1693,6 +1766,20 @@ public class MttoPao implements Serializable {
         List<String> lstMensaje = new ArrayList<>();
 
         try {
+
+            if (!validarLongitudCampo(evaluacionActual.getProyec(), "Proyectado", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+            if (!validarLongitudCampo(evaluacionActual.getRealiz(), "Realizado", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+            if (!validarLongitudCampo(evaluacionActual.getDescriprealiz(), "Detalle de lo Realizado", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+            if (!validarLongitudCampo(evaluacionActual.getObserv(), "Observaciones", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+
             if (evaluacionActual.getPerieval() != null) {
                 evaluacionActual.setPerieval(evaluacionActual.getPerieval().trim());
             }
@@ -1723,7 +1810,6 @@ public class MttoPao implements Serializable {
                     lstMensaje.add("No puede registrar evaluaciones con fecha de años anteriores.");
                 }
             }
-
             if (evaluacionActual.getPerieval() == null
                     || evaluacionActual.getPerieval().isEmpty()
                     || "0".equals(evaluacionActual.getPerieval())
@@ -1962,35 +2048,20 @@ public class MttoPao implements Serializable {
             if (accionNoPlanActual.getPerieval() != null) {
                 accionNoPlanActual.setPerieval(accionNoPlanActual.getPerieval().trim());
             }
-            if (accionNoPlanActual.getProyec() != null) {
-                accionNoPlanActual.setProyec(accionNoPlanActual.getProyec().trim());
-            }
-            if (accionNoPlanActual.getRealiz() != null) {
-                accionNoPlanActual.setRealiz(accionNoPlanActual.getRealiz().trim());
-            }
-            if (accionNoPlanActual.getObserv() != null) {
-                accionNoPlanActual.setObserv(accionNoPlanActual.getObserv().trim());
-            }
-            if (accionNoPlanActual.getRealiz() != null && accionNoPlanActual.getRealiz().length() > 500) {
-                this.showMsg("El campo 'Realizado' no puede exceder 500 caracteres. Actualmente tiene "
-                        + accionNoPlanActual.getRealiz().length() + " caracteres.", ValidaDatos.WARNING);
-                return;
-            }
-            if (accionNoPlanActual.getDescrip() != null && accionNoPlanActual.getDescrip().length() > 500) {
-                this.showMsg("La 'Descripción' no puede exceder 500 caracteres. Actualmente tiene "
-                        + accionNoPlanActual.getDescrip().length() + " caracteres.", ValidaDatos.WARNING);
-                return;
-            }
-            if (accionNoPlanActual.getProyec() != null && accionNoPlanActual.getProyec().length() > 500) {
-                this.showMsg("El campo 'Proyectado' no puede exceder 500 caracteres. Actualmente tiene "
-                        + accionNoPlanActual.getProyec().length() + " caracteres.", ValidaDatos.WARNING);
-                return;
-            }
-            if (accionNoPlanActual.getObserv() != null && accionNoPlanActual.getObserv().length() > 500) {
-                this.showMsg("El campo 'Observaciones' no puede exceder 500 caracteres. Actualmente tiene "
-                        + accionNoPlanActual.getObserv().length() + " caracteres.", ValidaDatos.WARNING);
-                return;
-            }
+            
+if (!validarLongitudCampo(accionNoPlanActual.getRealiz(), "Realizado", MAX_LONGITUD_TEXTO)) {
+    return;
+}
+if (!validarLongitudCampo(accionNoPlanActual.getDescrip(), "Descripción", MAX_LONGITUD_TEXTO)) {
+    return;
+}
+if (!validarLongitudCampo(accionNoPlanActual.getProyec(), "Proyectado", MAX_LONGITUD_TEXTO)) {
+    return;
+}
+if (!validarLongitudCampo(accionNoPlanActual.getObserv(), "Observaciones", MAX_LONGITUD_TEXTO)) {
+    return;
+}
+            
             if (selIdEstrategia == null && accionNoPlanActual.getIdestrategia() == null) {
                 this.showMsg("Debe vincular a una Estrategia.", ValidaDatos.WARNING);
                 return;
@@ -2043,10 +2114,10 @@ public class MttoPao implements Serializable {
             this.showMsg("Acción No Planificada guardada.", ValidaDatos.INFO);
 
             cargarAcciones();
-            cargarAccionesParaEvaluar();
+            //cargarAccionesParaEvaluar();
 
-            FacesContext fc = FacesContext.getCurrentInstance();
-            fc.getPartialViewContext().getRenderIds().add(":frmAcciones:panelNoPlanificadas");
+            //FacesContext.getCurrentInstance().getPartialViewContext().getRenderIds().add("frmAcciones:panelNoPlanificadas");
+            FacesContext.getCurrentInstance().getPartialViewContext().getRenderIds().add("frmMttoPao:panelAcciones");
 
 
 
@@ -2172,15 +2243,120 @@ public class MttoPao implements Serializable {
 
         for (Plnaccioneval eva : listaEvaluacionesRealizadas) {
             if (eva.getIdaccionpao().equals(accion)) {
-                if (eva.getCumplipct() != null && eva.getCumplipct().compareTo(UMBRAL_CUMPLIMIENTO) < 0) {
+                if (eva.getCumplipct() != null && eva.getCumplipct().compareTo(this.umbralCumplimiento) < 0) {
                     return true;
                 }
             }
         }
         return false;
     }
-    //</editor-fold>
 
+    public void cargarSeguimientosCriticos() {
+        listaAccionesBajoCumplimiento.clear();
+        if (paoActual == null || paoActual.getIdpao() == null) {
+            return;
+        }
+
+        try {
+            // Obtenemos todas las acciones del PAO actual
+            List<Plnacciondeta> todas = busqPep.buscarAccionesPorPao(paoActual.getIdpao());
+
+            for (Plnacciondeta ax : todas) {
+                // Buscamos la última evaluación registrada para esta acción
+                Plnaccioneval eval = busqPep.buscarEvaluacionPorAccion(ax.getIdaccionpao());
+
+                if (eval != null && eval.getCumplipct() != null) {
+                    // Comprobamos si el cumplimiento es menor al 80%
+                    if (eval.getCumplipct().compareTo(this.umbralCumplimiento) < 0) {
+
+                        // IMPORTANTE: Debes tener el método setUltimaEvaluacion en Plnacciondeta
+                        // como @Transient para que esto no falle.
+                        ax.setUltimaEvaluacion(eval);
+
+                        listaAccionesBajoCumplimiento.add(ax);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            showMsg("Error al cargar seguimientos críticos: " + e.getMessage(), ValidaDatos.ERROR);
+        }
+    }
+    
+    
+public void cargarTabSeguimiento(javax.faces.event.ComponentSystemEvent event) {
+    this.listaCriticasPendientes = new ArrayList<Plnacciondeta>();
+    this.listaSeguimientosYaRealizados = new ArrayList<Plnaccionseguimiento>();
+
+    if (paoActual == null || paoActual.getIdpao() == null) return;
+
+    try {
+        // --- TABLA 2: TODAS LAS QUE YA TIENEN SEGUIMIENTO (SIN EXCEPCIÓN) ---
+        // Traemos absolutamente todos los registros de la tabla PLNACCIONSEGUIMIENTO para este PAO
+        this.listaSeguimientosYaRealizados = busqPep.buscarSeguimientosPorPao(paoActual.getIdpao());
+        
+        // Inyectamos el periodo y cumplimiento a los registros que ya existen para que se vean en la tabla
+        for (Plnaccionseguimiento seg : listaSeguimientosYaRealizados) {
+             Plnaccioneval ev = busqPep.buscarEvaluacionPorAccion(seg.getIdaccionpao().getIdaccionpao());
+             if (ev != null) {
+                 seg.setPeriodoEvaluacion(ev.getPerieval());
+                 seg.setCumplimientoEvaluacion(ev.getCumplipct());
+             }
+        }
+
+        // --- TABLA 1: SOLO LAS PENDIENTES (FILTRADAS POR UMBRAL < 80%) ---
+        List<Plnacciondeta> todasAcciones = busqPep.buscarAccionesPorPao(paoActual.getIdpao());
+
+        for (Plnacciondeta ax : todasAcciones) {
+            // Buscamos su evaluación para ver si "califica" como crítica
+            Plnaccioneval eval = busqPep.buscarEvaluacionPorAccion(ax.getIdaccionpao());
+
+            if (eval != null && eval.getCumplipct() != null) {
+                // REGLA: Si es menor al 80%...
+                if (eval.getCumplipct().compareTo(this.umbralCumplimiento) < 0) {
+                    
+                    // ...pero solo si aún NO le han registrado un seguimiento
+                    boolean yaRegistrada = false;
+                    for (Plnaccionseguimiento s : listaSeguimientosYaRealizados) {
+                        if (s.getIdaccionpao().getIdaccionpao().equals(ax.getIdaccionpao())) {
+                            yaRegistrada = true;
+                            break;
+                        }
+                    }
+
+                    if (!yaRegistrada) {
+                        ax.setUltimaEvaluacion(eval); 
+                        this.listaCriticasPendientes.add(ax);
+                    }
+                }
+            }
+        }
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+    
+    
+public void imprimirSeguimientos() {
+    try {
+        if (this.paoActual == null || this.paoActual.getIdpao() == null) return;
+
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("idPao", paoActual.getIdpao().intValue());
+        
+        if (this.periodoFiltroReporte == null || this.periodoFiltroReporte.equals("0") || this.periodoFiltroReporte.trim().isEmpty()) {
+            params.put("perievalFiltro", null);
+        } else {
+            params.put("perievalFiltro", this.periodoFiltroReporte.trim());
+        }
+
+        imprimirReportePln(params, "rptSeguimientoGerencialPAO");
+    } catch (Exception e) {
+        showMsg("Error: " + e.getMessage(), ValidaDatos.ERROR);
+    }
+}
+
+    //</editor-fold>
     //<editor-fold defaultstate="collapsed" desc="MÓDULO PLANIFICACIÓN TRIMESTRAL">
     /**
      * ABRE EL POPUP PARA GESTIONAR LA PLANIFICACIÓN TRIMESTRAL DE UNA ACCIÓN.
@@ -2912,30 +3088,48 @@ public class MttoPao implements Serializable {
     /**
      * PROCESA EXCEPCIONES DE VALIDACIÓN Y MUESTRA MENSAJES.
      */
-    private void procesarValidacionExcepcion(ValidacionExcepcion ve) {
-        if (ve.getMensajes() != null && !ve.getMensajes().isEmpty()) {
-            for (String msj : ve.getMensajes()) {
-                showMsg(msj, ValidaDatos.ERROR);
-            }
-        } else {
-            showMsg(ve.getMessage(), ValidaDatos.ERROR);
+private void procesarValidacionExcepcion(ValidacionExcepcion ve) {
+    if (ve.getMensajes() != null && !ve.getMensajes().isEmpty()) {
+        for (String msj : ve.getMensajes()) {
+            showMsg(msj, ValidaDatos.ERROR);
         }
+    } else {
+        showMsg(ve.getMessage(), ValidaDatos.ERROR);
     }
+}
 
     /**
      * MUESTRA UN MENSAJE AL USUARIO.
      */
-    private void showMsg(String msg, int severity) {
-        JavascriptContext.addJavascriptCall(FacesContext.getCurrentInstance(), "mensaje.show();");
-        this.validar.setMsgValidation(msg, "dialog", severity, null, null, null);
-    }
+private void showMsg(String msg, int severity) {
+    JavascriptContext.addJavascriptCall(FacesContext.getCurrentInstance(), "mensaje.show();");
+    this.validar.setMsgValidation(msg, "dialog", severity, null, null, null);
+}
 
     /**
      * MUESTRA UN MENSAJE DE ERROR CON LOG DE EXCEPCIÓN.
      */
-    private void showMsgLog(Throwable ex, int severity) {
-        JavascriptContext.addJavascriptCall(FacesContext.getCurrentInstance(), "mensaje.show();");
-        this.validar.setMsgValidation(ex.getMessage(), "dialog", severity, ex.getLocalizedMessage(), this.getClass(), ex);
+ private void showMsgLog(Throwable ex, int severity) {
+    JavascriptContext.addJavascriptCall(FacesContext.getCurrentInstance(), "mensaje.show();");
+    this.validar.setMsgValidation(ex.getMessage(), "dialog", severity, ex.getLocalizedMessage(), this.getClass(), ex);
+}
+    
+    /**
+     * VALIDA LA LONGITUD DE UN CAMPO DE TEXTO.
+     *
+     * @param valor El valor a validar
+     * @param nombreCampo El nombre del campo (para el mensaje)
+     * @param maxLongitud La longitud máxima permitida
+     * @return true si es válido, false si excede
+     */
+    private boolean validarLongitudCampo(String valor, String nombreCampo, int maxLongitud) {
+        if (valor != null && valor.length() > maxLongitud) {
+            this.showMsg("El campo '" + nombreCampo + "' no puede exceder " + maxLongitud
+                    + " caracteres. Actualmente tiene " + valor.length() + " caracteres.",
+                    ValidaDatos.WARNING);
+            return false;
+        }
+        return true;
     }
     //</editor-fold>
 
@@ -3511,6 +3705,14 @@ public class MttoPao implements Serializable {
         return "OTRO";
     }
 
+    public List<Plnacciondeta> getListaCriticasPendientes() {
+        return listaCriticasPendientes;
+    }
+
+    public List<Plnaccionseguimiento> getListaSeguimientosYaRealizados() {
+        return listaSeguimientosYaRealizados;
+    }
+
     //
     //INICIATIVAS
     public List<Plnpaoinic> getListaIniciativasPao() {
@@ -3697,8 +3899,21 @@ public class MttoPao implements Serializable {
     public List<ResumenPepDTO> getLstArbolCompleto() {
         return lstArbolCompleto;
     }
-    // </editor-fold>
 
+    public BigDecimal getUmbralCumplimiento() {
+        return this.umbralCumplimiento;
+    }
+
+    public List<Plnacciondeta> getListaAccionesBajoCumplimiento() {
+        return listaAccionesBajoCumplimiento;
+    }
+    
+    public String getPeriodoFiltroReporte() { return periodoFiltroReporte; }
+public void setPeriodoFiltroReporte(String s) { this.periodoFiltroReporte = s; }
+//public String getComentarioGerencialGeneral() { return comentarioGerencialGeneral; }
+//public void setComentarioGerencialGeneral(String s) { this.comentarioGerencialGeneral = s; }
+
+    // </editor-fold>
     /**
      * ABRE EL POPUP DE EVALUACIÓN. Si no tiene planificaciones → muestra
      * advertencia y abre popup vacío. Si tiene → calcula pesos y abre popup con
@@ -3706,6 +3921,8 @@ public class MttoPao implements Serializable {
      */
     public void prepararEvaluacion(Plnacciondeta accion) {
         try {
+            this.editandoEvaluacionExistente = false;
+            
             cargarResumenJerarquiaUnificado(accion);
             cargarPeriodosEvaluacionPermitidos();
 
@@ -3883,46 +4100,38 @@ public class MttoPao implements Serializable {
      * límite 15 Jul ENERO-SEPTIEMBRE→ cierra Sep 30 → límite 15 Oct
      * ENERO-DICIEMBRE → cierra Dic 31 → límite 15 Ene (año siguiente)
      */
-    public void cargarPeriodosEvaluacionPermitidos() {
-        listaPeriodosEvaluacion.clear();
+public void cargarPeriodosEvaluacionPermitidos() {
+    listaPeriodosEvaluacion.clear();
 
-        Calendar hoy = Calendar.getInstance();
-        int mesHoy = hoy.get(Calendar.MONTH) + 1; // 1..12
-        int diaHoy = hoy.get(Calendar.DAY_OF_MONTH);
-        int anioHoy = hoy.get(Calendar.YEAR);
+    Calendar hoy = Calendar.getInstance();
+    int mesHoy = hoy.get(Calendar.MONTH) + 1;
+    int anioHoy = hoy.get(Calendar.YEAR);
 
-        // ENERO-MARZO: disponible desde Ene hasta 15 Abr
-        Calendar limiteP1 = Calendar.getInstance();
-        limiteP1.set(anioHoy, Calendar.APRIL, 15, 23, 59, 59);
-        if (hoy.compareTo(limiteP1) <= 0 && mesHoy >= 1) {
-            listaPeriodosEvaluacion.add(
-                    new SelectItem("ENERO - MARZO", "ENERO - MARZO"));
-        }
-
-        // ENERO-JUNIO: disponible desde Abr hasta 15 Jul
-        Calendar limiteP2 = Calendar.getInstance();
-        limiteP2.set(anioHoy, Calendar.JULY, 15, 23, 59, 59);
-        if (hoy.compareTo(limiteP2) <= 0 && mesHoy >= 4) {
-            listaPeriodosEvaluacion.add(
-                    new SelectItem("ENERO - JUNIO", "ENERO - JUNIO"));
-        }
-
-        // ENERO-SEPTIEMBRE: disponible desde Jul hasta 15 Oct
-        Calendar limiteP3 = Calendar.getInstance();
-        limiteP3.set(anioHoy, Calendar.OCTOBER, 15, 23, 59, 59);
-        if (hoy.compareTo(limiteP3) <= 0 && mesHoy >= 7) {
-            listaPeriodosEvaluacion.add(
-                    new SelectItem("ENERO - SEPTIEMBRE", "ENERO - SEPTIEMBRE"));
-        }
-
-        // ENERO-DICIEMBRE: disponible desde Oct hasta 15 Ene año siguiente
-        Calendar limiteP4 = Calendar.getInstance();
-        limiteP4.set(anioHoy + 1, Calendar.JANUARY, 15, 23, 59, 59);
-        if (hoy.compareTo(limiteP4) <= 0 && mesHoy >= 10) {
-            listaPeriodosEvaluacion.add(
-                    new SelectItem("ENERO - DICIEMBRE", "ENERO - DICIEMBRE"));
-        }
+    Calendar limiteP1 = procesarFechaLimite(this.fechaLimiteQ1, anioHoy, false);
+    if (hoy.compareTo(limiteP1) <= 0 && mesHoy >= 1) {
+        listaPeriodosEvaluacion.add(
+            new SelectItem("ENERO - MARZO", "ENERO - MARZO"));
     }
+
+    Calendar limiteP2 = procesarFechaLimite(this.fechaLimiteQ2, anioHoy, false);
+    if (hoy.compareTo(limiteP2) <= 0 && mesHoy >= 4) {
+        listaPeriodosEvaluacion.add(
+            new SelectItem("ENERO - JUNIO", "ENERO - JUNIO"));
+    }
+
+    Calendar limiteP3 = procesarFechaLimite(this.fechaLimiteQ3, anioHoy, false);
+    if (hoy.compareTo(limiteP3) <= 0 && mesHoy >= 7) {
+        listaPeriodosEvaluacion.add(
+            new SelectItem("ENERO - SEPTIEMBRE", "ENERO - SEPTIEMBRE"));
+    }
+
+    // Q4 pasa al año siguiente
+    Calendar limiteP4 = procesarFechaLimite(this.fechaLimiteQ4, anioHoy, true);
+    if (hoy.compareTo(limiteP4) <= 0 && mesHoy >= 10) {
+        listaPeriodosEvaluacion.add(
+            new SelectItem("ENERO - DICIEMBRE", "ENERO - DICIEMBRE"));
+    }
+}
 
     public List<SelectItem> getListaPeriodosEvaluacion() {
         return listaPeriodosEvaluacion;
@@ -3974,15 +4183,31 @@ public class MttoPao implements Serializable {
         }
     }
 
-/**
-     * GUARDA LOS CUMPLIMIENTOS TRIMESTRALES.
-     * Incluye validación estricta en memoria (Java) para aislar la acción 
-     * y evitar falsos positivos de duplicidad de periodo.
+    /**
+     * GUARDA LOS CUMPLIMIENTOS TRIMESTRALES. Incluye validación estricta en
+     * memoria (Java) para aislar la acción y evitar falsos positivos de
+     * duplicidad de periodo.
      */
     public void guardarCumplimientosTrimestrales() {
         try {
+
+
             if (listaDetallesEvaluar == null || listaDetallesEvaluar.isEmpty()) {
                 showMsg("No hay planificaciones trimestrales para evaluar.", ValidaDatos.WARNING);
+                return;
+            }
+
+            // Validar longitud de campos ANTES de validar vacíos
+            if (!validarLongitudCampo(evaluacionActual.getProyec(), "Proyectado", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+            if (!validarLongitudCampo(evaluacionActual.getRealiz(), "Realizado", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+            if (!validarLongitudCampo(evaluacionActual.getDescriprealiz(), "¿Qué se Realizó?", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+            if (!validarLongitudCampo(evaluacionActual.getObserv(), "Observaciones", MAX_LONGITUD_TEXTO)) {
                 return;
             }
 
@@ -3993,14 +4218,8 @@ public class MttoPao implements Serializable {
                 showMsg("Debe seleccionar un Periodo Acumulado.", ValidaDatos.WARNING);
                 return;
             }
-            if (evaluacionActual.getFchaeval() == null) {
-                showMsg("La Fecha de Evaluación es obligatoria.", ValidaDatos.WARNING);
-                return;
-            }
-            if (evaluacionActual.getFchaeval().after(new java.util.Date())) {
-                showMsg("La fecha de evaluación no puede ser futura.", ValidaDatos.WARNING);
-                return;
-            }
+            evaluacionActual.setFchaeval(new java.util.Date());
+            
             if (evaluacionActual.getProyec() == null || evaluacionActual.getProyec().trim().isEmpty()) {
                 showMsg("El campo Proyectado es obligatorio.", ValidaDatos.WARNING);
                 return;
@@ -4013,19 +4232,18 @@ public class MttoPao implements Serializable {
                 showMsg("El campo '¿Qué se Realizó?' es obligatorio.", ValidaDatos.WARNING);
                 return;
             }
-
             // ── CORRECCIÓN DE LA VALIDACIÓN DUPLICADA EN MEMORIA (JAVA) ──
             if (evaluacionActual.getIdevaluacion() == null) {
                 boolean periodoDuplicado = false;
-                
+
                 if (listaEvaluacionesDeAccionActual != null) {
                     for (Plnaccioneval ev : listaEvaluacionesDeAccionActual) {
                         // Verificación blindada: Compara ID de Acción + Nombre de Periodo
-                        if (ev.getIdaccionpao() != null 
-                            && ev.getIdaccionpao().getIdaccionpao().equals(evaluacionActual.getIdaccionpao().getIdaccionpao())
-                            && ev.getPerieval() != null 
-                            && ev.getPerieval().trim().equals(evaluacionActual.getPerieval().trim())) {
-                            
+                        if (ev.getIdaccionpao() != null
+                                && ev.getIdaccionpao().getIdaccionpao().equals(evaluacionActual.getIdaccionpao().getIdaccionpao())
+                                && ev.getPerieval() != null
+                                && ev.getPerieval().trim().equals(evaluacionActual.getPerieval().trim())) {
+
                             periodoDuplicado = true;
                             break;
                         }
@@ -4096,8 +4314,18 @@ public class MttoPao implements Serializable {
 
             showMsg("Evaluación del periodo '" + evaluacionActual.getPerieval()
                     + "' guardada. Cumplimiento: " + evaluacionActual.getCumplipct() + "%", ValidaDatos.INFO);
+           
+            if (this.umbralCumplimiento != null && evaluacionActual.getCumplipct().compareTo(this.umbralCumplimiento) < 0) {
+                showMsg("Cumplimiento del periodo '" + evaluacionActual.getPerieval()
+                        + "' requiere seguimiento por bajo cumplimiento. Mínimo requerido: "
+                        + this.umbralCumplimiento + "%", ValidaDatos.INFO);
+            }
 
             cargarAccionesParaEvaluar();
+            
+            if (this.panelAccionesVisible && this.selIdEstrategia != null) {
+                cargarAcciones();
+            }
 
             JavascriptContext.addJavascriptCall(FacesContext.getCurrentInstance(), "popupEvaluacion.hide();");
 
@@ -4116,6 +4344,19 @@ public class MttoPao implements Serializable {
                 showMsg("No hay planificaciones trimestrales para evaluar.", ValidaDatos.WARNING);
                 return;
             }
+            // ✅ Validar longitud PRIMERO
+            if (!validarLongitudCampo(evaluacionActual.getProyec(), "Proyectado", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+            if (!validarLongitudCampo(evaluacionActual.getRealiz(), "Realizado", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+            if (!validarLongitudCampo(evaluacionActual.getDescriprealiz(), "¿Qué se Realizó?", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
+            if (!validarLongitudCampo(evaluacionActual.getObserv(), "Observaciones", MAX_LONGITUD_TEXTO)) {
+                return;
+            }
 
             if (evaluacionActual.getPerieval() == null
                     || evaluacionActual.getPerieval().trim().isEmpty()
@@ -4123,14 +4364,8 @@ public class MttoPao implements Serializable {
                 showMsg("Debe seleccionar un Periodo Acumulado de Evaluación.", ValidaDatos.WARNING);
                 return;
             }
-            if (evaluacionActual.getFchaeval() == null) {
-                showMsg("La Fecha de Evaluación es obligatoria.", ValidaDatos.WARNING);
-                return;
-            }
-            if (evaluacionActual.getFchaeval().after(new java.util.Date())) {
-                showMsg("La fecha de evaluación no puede ser futura.", ValidaDatos.WARNING);
-                return;
-            }
+            evaluacionActual.setFchaeval(new java.util.Date());
+            
             if (evaluacionActual.getProyec() == null || evaluacionActual.getProyec().trim().isEmpty()) {
                 showMsg("El campo Proyectado (Meta) es obligatorio.", ValidaDatos.WARNING);
                 return;
@@ -4143,6 +4378,7 @@ public class MttoPao implements Serializable {
                 showMsg("El campo '¿Qué se Realizó?' es obligatorio.", ValidaDatos.WARNING);
                 return;
             }
+
 
             boolean alMenosUnoEvaluado = false;
             for (Plnaccidetplantrim t : listaDetallesEvaluar) {
@@ -4168,14 +4404,14 @@ public class MttoPao implements Serializable {
             // ── CORRECCIÓN DE LA VALIDACIÓN DUPLICADA EN MEMORIA (JAVA) ──
             if (evaluacionActual.getIdevaluacion() == null) {
                 boolean periodoDuplicado = false;
-                
+
                 if (listaEvaluacionesDeAccionActual != null) {
                     for (Plnaccioneval ev : listaEvaluacionesDeAccionActual) {
-                        if (ev.getIdaccionpao() != null 
-                            && ev.getIdaccionpao().getIdaccionpao().equals(evaluacionActual.getIdaccionpao().getIdaccionpao())
-                            && ev.getPerieval() != null 
-                            && ev.getPerieval().trim().equals(evaluacionActual.getPerieval().trim())) {
-                            
+                        if (ev.getIdaccionpao() != null
+                                && ev.getIdaccionpao().getIdaccionpao().equals(evaluacionActual.getIdaccionpao().getIdaccionpao())
+                                && ev.getPerieval() != null
+                                && ev.getPerieval().trim().equals(evaluacionActual.getPerieval().trim())) {
+
                             periodoDuplicado = true;
                             break;
                         }
@@ -4299,34 +4535,30 @@ public class MttoPao implements Serializable {
      * hasta 15 Jul ENERO-SEPTIEMBRE → hasta 15 Oct ENERO-DICIEMBRE → hasta 15
      * Ene año siguiente
      */
-    public boolean isPeriodoEditable(String perieval) {
-        if (perieval == null || perieval.trim().isEmpty()) {
-            return false;
-        }
-
-        Calendar hoy = Calendar.getInstance();
-        Calendar limite = Calendar.getInstance();
-        int anio = hoy.get(Calendar.YEAR);
-
-        switch (perieval.trim().toUpperCase()) {
-            case "ENERO - MARZO":
-                limite.set(anio, Calendar.APRIL, 15, 23, 59, 59);
-                break;
-            case "ENERO - JUNIO":
-                limite.set(anio, Calendar.JULY, 15, 23, 59, 59);
-                break;
-            case "ENERO - SEPTIEMBRE":
-                limite.set(anio, Calendar.OCTOBER, 15, 23, 59, 59);
-                break;
-            case "ENERO - DICIEMBRE":
-                limite.set(anio + 1, Calendar.JANUARY, 15, 23, 59, 59);
-                break;
-            default:
-                return false;
-        }
-
-        return hoy.compareTo(limite) <= 0;
+public boolean isPeriodoEditable(String perieval) {
+    if (perieval == null || perieval.trim().isEmpty()) {
+        return false;
     }
+
+    Calendar hoy = Calendar.getInstance();
+    Calendar limite = null;
+    int anio = hoy.get(Calendar.YEAR);
+    String p = perieval.trim().toUpperCase();
+
+    if (p.equals("ENERO - MARZO")) {
+        limite = procesarFechaLimite(this.fechaLimiteQ1, anio, false);
+    } else if (p.equals("ENERO - JUNIO")) {
+        limite = procesarFechaLimite(this.fechaLimiteQ2, anio, false);
+    } else if (p.equals("ENERO - SEPTIEMBRE")) {
+        limite = procesarFechaLimite(this.fechaLimiteQ3, anio, false);
+    } else if (p.equals("ENERO - DICIEMBRE")) {
+        limite = procesarFechaLimite(this.fechaLimiteQ4, anio, true);
+    } else {
+        return false;
+    }
+
+    return hoy.compareTo(limite) <= 0;
+}
 
     public boolean isEvaluacionYaRealizada() {
         if (this.evaluacionActual == null || this.evaluacionActual.getIdevaluacion() == null) {
@@ -4558,10 +4790,21 @@ public class MttoPao implements Serializable {
 
             if (nuevoPct.compareTo(BigDecimal.ZERO) < 0) {
                 nuevoPct = BigDecimal.ZERO;
+                                    showMsg("El cumplimiento no puede ser menor a 0.", ValidaDatos.WARNING);
             }
             if (nuevoPct.compareTo(new BigDecimal(100)) > 0) {
                 nuevoPct = new BigDecimal(100);
+                                    showMsg("El cumplimiento no puede ser mayor a 100.", ValidaDatos.WARNING);
             }
+            
+            if (nuevoPct.compareTo(BigDecimal.ZERO) < 0 || nuevoPct.compareTo(new BigDecimal(100)) > 0) {
+                    showMsg("Por favor, ingrese un % de cumplimiento entre 0 y 100.", ValidaDatos.WARNING);
+                    
+                    // Refrescamos la tabla para borrar el número malo y regresar al valor anterior
+                    FacesContext.getCurrentInstance().getPartialViewContext()
+                            .getRenderIds().add("popupEvaluacionForm:panelTablaEvaluacion");
+                    return; // Abortamos la ejecución aquí
+                }
 
             UIComponent comp = event.getComponent();
             Object idFila = comp.getAttributes().get("idFila");
@@ -4692,4 +4935,101 @@ public class MttoPao implements Serializable {
             this.showMsg("Error al preparar la impresión del PEP: " + e.getMessage(), ValidaDatos.ERROR);
         }
     }
+
+
+
+/**
+     * Carga de variables operativas desde la tabla GENCONFIG utilizando Enumeradores.
+     * Elimina el uso de parámetros "quemados" en el código.
+     */
+/**
+     * Carga de variables operativas desde la tabla GENCONFIG utilizando parámetros directos.
+     * Elimina el uso de parámetros "quemados" en el resto de la lógica.
+     */
+    private void cargarConfiguracionesBD() {
+        try {
+            // ── 1. UMBRAL MÍNIMO DE CUMPLIMIENTO (CORPARAM=30, CORRELATIVO=10) ──
+            List<Genconfig> cfgsUmbral = busqGen.buscarGenconfigAll(
+                    new BigInteger("150"),  // CODMOD del módulo PAO
+                    new BigInteger("110"),  // CODPANT
+                    new BigInteger("30")    // CORPARAM = Cumplimiento mínimo seguimiento
+            );
+
+            if (cfgsUmbral != null) {
+                for (Genconfig cfg : cfgsUmbral) {
+                    // CORRECCIÓN: Usar .intValue() para poder comparar con el primitivo 10
+                    if (cfg.getGenconfigPK() != null 
+                            && cfg.getGenconfigPK().getCorrelativo().intValue() == 10
+                            && cfg.getValor() != null 
+                            && !cfg.getValor().trim().isEmpty()) {
+                        this.umbralCumplimiento = new BigDecimal(cfg.getValor().trim());
+                    }
+                }
+            }
+
+            // ── 2. FECHAS LÍMITE DE EVALUACIÓN (CORPARAM=20, CORRELATIVOS 10-40) ──
+            List<Genconfig> cfgsFechas = busqGen.buscarGenconfigAll(
+                    new BigInteger("150"),  // CODMOD
+                    new BigInteger("110"),  // CODPANT
+                    new BigInteger("20")    // CORPARAM = Fechas límite evaluaciones
+            );
+
+            if (cfgsFechas != null) {
+                for (Genconfig cfg : cfgsFechas) {
+                    if (cfg.getGenconfigPK() == null 
+                            || cfg.getValor() == null 
+                            || cfg.getValor().trim().isEmpty()) {
+                        continue;
+                    }
+
+                    // CORRECCIÓN: Usar .intValue() en lugar de castear con (int)
+                    int corr = cfg.getGenconfigPK().getCorrelativo().intValue();
+                    String valor = cfg.getValor().trim(); // Formato "15/04", "15/07", etc.
+
+                    switch (corr) {
+                        case 10: this.fechaLimiteQ1 = valor; break; // 15/04
+                        case 20: this.fechaLimiteQ2 = valor; break; // 15/07
+                        case 30: this.fechaLimiteQ3 = valor; break; // 15/10
+                        case 40: this.fechaLimiteQ4 = valor; break; // 15/01
+                    }
+                }
+            }
+
+//        // ── 3. FALLBACKS DEFENSIVOS si la BD no tiene datos ──
+//        if (this.umbralCumplimiento == null)   this.umbralCumplimiento = new BigDecimal("80");
+//        if (this.fechaLimiteQ1 == null)        this.fechaLimiteQ1 = "15/04";
+//        if (this.fechaLimiteQ2 == null)        this.fechaLimiteQ2 = "15/07";
+//        if (this.fechaLimiteQ3 == null)        this.fechaLimiteQ3 = "15/10";
+//        if (this.fechaLimiteQ4 == null)        this.fechaLimiteQ4 = "15/01";
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Si falla la BD, el sistema sigue funcionando con valores seguros
+//        this.umbralCumplimiento = new BigDecimal("80");
+//        this.fechaLimiteQ1 = "15/04";
+//        this.fechaLimiteQ2 = "15/07";
+//        this.fechaLimiteQ3 = "15/10";
+//        this.fechaLimiteQ4 = "15/01";
+        }
+    }
+    
+    /**
+     * Convierte la cadena dinámica de la BD (dd/MM) en un Calendar para validación de límites.
+     */
+private Calendar procesarFechaLimite(String fechaStr, int anioBase, 
+                                      boolean esAnioSiguiente) {
+    Calendar cal = Calendar.getInstance();
+    try {
+        String[] partes = fechaStr.split("/");
+        int dia = Integer.parseInt(partes[0].trim());
+        int mes = Integer.parseInt(partes[1].trim()) - 1; // MONTH inicia en 0
+        int anioReal = esAnioSiguiente ? (anioBase + 1) : anioBase;
+        cal.set(anioReal, mes, dia, 23, 59, 59);
+    } catch (Exception e) {
+        // Fallback seguro si el formato en BD es incorrecto
+        cal.set(anioBase, Calendar.DECEMBER, 31, 23, 59, 59);
+    }
+    return cal;
+}
+    
 }

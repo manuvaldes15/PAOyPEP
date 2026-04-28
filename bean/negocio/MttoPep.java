@@ -23,10 +23,12 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
+import javax.faces.application.FacesMessage;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ManagedProperty;
 import javax.faces.bean.SessionScoped;
@@ -140,12 +142,25 @@ public class MttoPep implements Serializable {
         refrescarComboCatalogo();
     }
 
-    //<editor-fold defaultstate="collapsed" desc="MÓDULO PEP - Búsqueda y Gestión">
+    //<editor-fold defaultstate="collapsed" desc="MÓDULO PEP">
+    
+        private void limpiarMensajesJSF() {
+        FacesContext context = FacesContext.getCurrentInstance();
+        Iterator<FacesMessage> it = context.getMessages();
+        while (it.hasNext()) {
+            it.next();
+            it.remove();
+        }
+    }
+    
     /**
      * BUSCA PLANES ESTRATÉGICOS PARTICIPATIVOS CON FILTROS. Permite filtrar por
      * año de inicio y estado del PEP.
      */
     public void buscarPeps() {
+        
+        limpiarMensajesJSF();
+                
         Map<String, Object> filtro = new HashMap<>();
         this.lstPeps = new ArrayList<>();
 
@@ -161,8 +176,8 @@ public class MttoPep implements Serializable {
             if (this.smPep != null) {
                 this.smPep.clear();
             }
-            if (this.lstPeps.isEmpty()) {
-                this.showMsg("No se encontraron Planes Estratégicos con los filtros indicados.", ValidaDatos.INFO);
+            if (this.lstPeps.isEmpty() || this.lstPeps == null) {
+                this.showMsg("No se encontraron PEPs con los filtros indicados.", ValidaDatos.INFO);
             }
 
         } catch (Exception ex) {
@@ -291,13 +306,11 @@ public class MttoPep implements Serializable {
 
         try {
             adminPep.guardarPep(this.pep, sesion.getSegusuario().getCodusr());
-
-            this.setCambiarTagPanel(1);
-            this.showMsg("Plan Estratégico Participativo guardado correctamente.", ValidaDatos.INFO);
-
             buscarPeps();
             this.cancelarPep();
 
+            this.showMsg("Plan Estratégico Participativo guardado correctamente.", ValidaDatos.INFO);
+            
         } catch (ValidacionExcepcion ve) {
             procesarValidacionExcepcion(ve);
         } catch (Exception ex) {
@@ -420,7 +433,7 @@ public class MttoPep implements Serializable {
     }
     //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="MÓDULO PERSPECTIVAS - Catálogo Maestro">
+    //<editor-fold defaultstate="collapsed" desc="MÓDULO PERSPECTIVAS">
     /**
      * REFRESCA EL COMBO DE PERSPECTIVAS DESDE PERSPECTIVAS. Carga solo las
      * perspectivas activas.
@@ -841,6 +854,22 @@ public class MttoPep implements Serializable {
                 this.showMsg("La descripción es obligatoria.", ValidaDatos.WARNING);
                 return;
             }
+            if (nuevaEstrategia.getAnio() == null || nuevaEstrategia.getAnio() == 0 ) {
+                this.showMsg("Escriba el año de uso de esta línea estratégica.", ValidaDatos.WARNING);
+                return;
+            }
+            if (nuevaEstrategia.getAnio() == null|| nuevaEstrategia.getAnio() == 0 ) {
+                this.showMsg("Escriba el año de uso de esta línea estratégica.", ValidaDatos.WARNING);
+                return;
+            }
+
+            if (nuevaEstrategia.getAnio() < pep.getAnioini() || nuevaEstrategia.getAnio() > pep.getAniofin()) {
+                this.showMsg("El año de la línea estratégica debe estar dentro de la vigencia del PEP ("
+                        + pep.getAnioini() + " - " + pep.getAniofin() + ").",
+                        ValidaDatos.WARNING);
+                return;
+            }
+
             nuevaEstrategia.setIdindicadorcump(indicadorSeleccionado);
 
             adminPep.guardarEstrategia(nuevaEstrategia, sesion.getSegusuario().getCodusr());
@@ -969,10 +998,11 @@ public class MttoPep implements Serializable {
             switch (tipoEliminacion) {
                 case DEL_PEP:
                     if (eliminarPepHijos(this.pep)) {
-                        this.showMsg("PEP eliminado.", ValidaDatos.INFO);
                         buscarPeps();
                         cancelarPep();
                     }
+                    this.showMsg("PEP eliminado de manera correcta.", ValidaDatos.INFO);
+
                     break;
 
                 case DEL_PERSPECTIVA:
@@ -1168,7 +1198,7 @@ public class MttoPep implements Serializable {
     }
     //</editor-fold>
 
-    //<editor-fold defaultstate="collapsed" desc="MÓDULO APROBACIÓN GERENCIAL">
+    //<editor-fold defaultstate="collapsed" desc="MÓDULO APROBACIÓN PEP">
     /**
      * PREPARA EL POPUP PARA APROBAR UN PEP. Carga los datos del acta (número,
      * punto, fecha).
@@ -1193,15 +1223,16 @@ public class MttoPep implements Serializable {
         try {
             adminPep.aprobarPepGerencia(this.pep, sesion.getSegusuario().getCodusr());
 
-            this.showMsg("PEP Aprobado Correctamente.", ValidaDatos.INFO);
-
             JavascriptContext.addJavascriptCall(FacesContext.getCurrentInstance(), "popupAprobarPep.hide();");
             buscarPeps();
+
+            this.showMsg("PEP Aprobado Correctamente.", ValidaDatos.INFO);
 
         } catch (Exception e) {
             this.showMsg("Error al aprobar: " + e.getMessage(), ValidaDatos.ERROR);
         }
     }
+   
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="MÉTODOS UTILITARIOS">

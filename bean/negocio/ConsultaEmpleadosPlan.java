@@ -1,5 +1,6 @@
 package com.coop1.soficoop.pln.negocio;
 
+import com.coop1.banksys.general.excepciones.ValidacionExcepcion;
 import com.coop1.banksys.general.utilidades.web.ValidaDatos;
 import com.coop1.banksys.login.entidades.Segsesion;
 import com.coop1.banksys.login.entidades.Segusuario;
@@ -14,6 +15,7 @@ import java.math.BigInteger;
 import java.util.*;
 import javax.annotation.PostConstruct;
 import javax.ejb.EJB;
+import javax.faces.application.FacesMessage;
 import javax.faces.bean.ManagedBean;
 import javax.faces.bean.ViewScoped;
 import javax.faces.bean.ManagedProperty;
@@ -60,6 +62,7 @@ public class ConsultaEmpleadosPlan implements Serializable {
     private List<ResumenPepDTO> lstArbolCompleto = new ArrayList<ResumenPepDTO>();
     private int indiceTab = 0;
     private ValidaDatos validar = new ValidaDatos(FacesContext.getCurrentInstance());
+    private boolean busquedaRealizada = false;
     private List<Plnpao> listaPaosEncontrados = new ArrayList<Plnpao>();
     private List<Plnaccionsinplan> listaNoPlanificadasEvaluadas = new ArrayList<Plnaccionsinplan>();
     //</editor-fold>
@@ -282,57 +285,69 @@ public class ConsultaEmpleadosPlan implements Serializable {
         this.listaResumen.clear();
         this.lstArbolCompleto.clear();
         this.indiceTab = 0;
+        this.busquedaRealizada = false;
     }
 
     /**
      * BUSCA PAOs DEL PEP SELECCIONADO QUE PERTENEZCAN AL MISMO DEPTO DEL
      * EMPLEADO ACTUAL.
      */
+    
     /**
-     * BUSCA PAOs DEL PEP SELECCIONADO QUE PERTENEZCAN AL MISMO DEPTO DEL
-     * EMPLEADO ACTUAL.
+     * Valida los parámetros de entrada y el contexto del empleado antes de buscar.
+     * @throws ValidacionExcepcion Si faltan datos obligatorios.
      */
-    public void buscarPaos() {
-        listaPaosEncontrados = new ArrayList<Plnpao>();
-        tienePaoAsignado = false;
-        paoVisualizado = null;
+    private void validarBusquedaPaos() throws ValidacionExcepcion {
+        List<String> errores = new ArrayList<String>();
 
-        if (selIdPep == null || selIdPep.equals(BigInteger.ZERO)) {
-            showMsg("Debe seleccionar un Plan Estratégico (PEP).", ValidaDatos.WARNING);
-            return;
+        if (this.selIdPep == null || BigInteger.ZERO.equals(this.selIdPep)) {
+            errores.add("Por favor, seleccione un Plan Estratégico (PEP) para buscar.");
         }
 
+        if (this.miEmpleado == null
+                || this.miEmpleado.getPuesto() == null
+                || this.miEmpleado.getPuesto().getRhudepto() == null) {
+            errores.add("No se pudo identificar su área/departamento asignado en el sistema.");
+        }
+
+        if (!errores.isEmpty()) {
+            throw new ValidacionExcepcion("Complete/Corrija lo siguiente", errores);
+        }
+    }
+    
+    
+/**
+     * Ejecuta la búsqueda de PAOs filtrando automáticamente por el departamento
+     * del empleado logueado.
+     */
+    public void buscarPaos() {
+        // (Opcional) Si creaste el método limpiarMensajesJSF(), descoméntalo aquí:
+        // limpiarMensajesJSF(); 
+        
+        this.listaPaosEncontrados = new ArrayList<Plnpao>();
+        this.tienePaoAsignado = false;
+        this.paoVisualizado = null;
+
         try {
-            // ── 1. Validar empleado actual ─────────────────────────────────────
-            if (miEmpleado == null
-                    || miEmpleado.getPuesto() == null
-                    || miEmpleado.getPuesto().getRhudepto() == null) {
-                showMsg("No se pudo identificar tu área/departamento.", ValidaDatos.WARNING);
-                return;
-            }
+            // 1. Ejecutar validaciones estrictas (Lanza excepción si algo falla)
+            validarBusquedaPaos();
 
-            BigInteger miCodDepto = miEmpleado.getPuesto()
-                    .getRhudepto()
-                    .getRhudeptoPK()
-                    .getCoddepto();
+            // 2. Extraer datos del departamento del empleado actual
+            BigInteger miCodDepto = this.miEmpleado.getPuesto().getRhudepto().getRhudeptoPK().getCoddepto();
+            String miNombreDepto = this.miEmpleado.getPuesto().getRhudepto().getDescdepto();
 
-            String miNombreDepto = miEmpleado.getPuesto()
-                    .getRhudepto()
-                    .getDescdepto();
-
-            // ── 2. Traer TODOS los PAOs del PEP Usando buscarPaosDinamico ──────
-            // ✅ Solo filtro por PEP — sin coordinador, sin agencia, sin depto
+            // 3. Traer TODOS los PAOs del PEP seleccionado
             Map<String, Object> filtros = new HashMap<String, Object>();
-            filtros.put("idPep", new BigDecimal(selIdPep));
+            filtros.put("idPep", new BigDecimal(this.selIdPep));
 
             List<Plnpao> todos = busqPep.buscarPaosDinamico(filtros);
 
             if (todos == null || todos.isEmpty()) {
-                showMsg("No existen PAOs registrados para este PEP.", ValidaDatos.WARNING);
-                return;
+                showMsg("No se encontraron PAOs registrados para este PEP.", ValidaDatos.INFO);
+                return; // CRÍTICO: Abortar aquí para no sobrescribir el mensaje
             }
 
-            // ── 3. Filtrar en Java: solo los del mismo depto que yo ────────────
+            // 4. Filtrar en memoria: solo los del mismo departamento
             for (Plnpao p : todos) {
                 try {
                     BigInteger codDeptoCoord = p.getIdcoordinador()
@@ -342,25 +357,33 @@ public class ConsultaEmpleadosPlan implements Serializable {
                             .getCoddepto();
 
                     if (codDeptoCoord.equals(miCodDepto)) {
-                        listaPaosEncontrados.add(p);
+                        this.listaPaosEncontrados.add(p);
                     }
                 } catch (Exception ignored) {
-                    // Coordinador sin depto asignado → se omite
+                    // Coordinador sin depto asignado → se omite silenciosamente
                 }
             }
 
-            // ── 4. Resultado ───────────────────────────────────────────────────
-            if (listaPaosEncontrados.isEmpty()) {
-                showMsg("No hay PAOs en tu área (" + miNombreDepto + ") para este PEP.",
-                        ValidaDatos.WARNING);
+            // 5. Resultado Final
+            if (this.listaPaosEncontrados.isEmpty()) {
+                showMsg("No hay PAOs en tu área (" + miNombreDepto + ") para este PEP.", ValidaDatos.WARNING);
             } else {
-                showMsg("Se encontraron " + listaPaosEncontrados.size()
-                        + " PAO(s) en el área: " + miNombreDepto, ValidaDatos.INFO);
+                showMsg("Se encontraron " + this.listaPaosEncontrados.size() + " PAO(s) en el área: " + miNombreDepto, ValidaDatos.INFO);
             }
 
+        } catch (ValidacionExcepcion ve) {
+            // Procesar excepciones de validación (fail-fast)
+            if (ve.getMensajes() != null && !ve.getMensajes().isEmpty()) {
+                for (String msj : ve.getMensajes()) {
+                    showMsg(msj, ValidaDatos.WARNING);
+                }
+            } else {
+                showMsg(ve.getMessage(), ValidaDatos.WARNING);
+            }
         } catch (Exception e) {
+            // Captura de errores de base de datos o sistema
             e.printStackTrace();
-            showMsg("Error al buscar PAOs: " + e.getMessage(), ValidaDatos.ERROR);
+            showMsg("Error grave al buscar PAOs: " + e.getMessage(), ValidaDatos.ERROR);
         }
     }
 
@@ -587,10 +610,20 @@ public class ConsultaEmpleadosPlan implements Serializable {
     //</editor-fold>
 
     //<editor-fold defaultstate="collapsed" desc="MÓDULO UTILIDADES">
-    private void showMsg(String msg, int severity) {
-        JavascriptContext.addJavascriptCall(FacesContext.getCurrentInstance(), "mensaje.show();");
-        this.validar.setMsgValidation(msg, "dialog", severity, null, null, null);
+private void showMsg(String msg, int severity) {
+    JavascriptContext.addJavascriptCall(
+        FacesContext.getCurrentInstance(), "mensaje.show();");
+    this.validar.setMsgValidation(msg, "dialog", severity, null, null, null);
+}
+        private void limpiarMensajesJSF() {
+        FacesContext context = FacesContext.getCurrentInstance();
+        Iterator<FacesMessage> it = context.getMessages();
+        while (it.hasNext()) {
+            it.next();
+            it.remove();
+        }
     }
+
 
     //</editor-fold>
     
@@ -758,6 +791,14 @@ public class ConsultaEmpleadosPlan implements Serializable {
 
     public void setListaNoPlanificadasEvaluadas(List<Plnaccionsinplan> listaNoPlanificadasEvaluadas) {
         this.listaNoPlanificadasEvaluadas = listaNoPlanificadasEvaluadas;
+    }
+    
+    public boolean isBusquedaRealizada() {
+        return busquedaRealizada;
+    }
+
+    public void setBusquedaRealizada(boolean busquedaRealizada) {
+        this.busquedaRealizada = busquedaRealizada;
     }
     //</editor-fold>
 }
