@@ -41,29 +41,29 @@ public class Plnaccionsinplan implements Serializable {
     private BigInteger idaccinoplan;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 500)
-    @Column(nullable = false, length = 500)
-    private String descrip;
+@Size(min = 1, max = 1000)  // ← Cambiar de 500 a 1000
+@Column(length = 1000)      // ← Cambiar de 500 a 1000
+private String descrip;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 500)
-    @Column(nullable = false, length = 500)
-    private String proyec;
+@Size(max = 1000)           // ← Cambiar de 500 a 1000
+@Column(length = 1000)      // ← Cambiar de 500 a 1000
+private String proyec;
     @Size(max = 100)
     @Column(length = 100)
     private String perieval;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 500)
-    @Column(nullable = false, length = 500)
-    private String realiz;
+@Size(max = 1000)           // ← Cambiar de 500 a 1000
+@Column(length = 1000)      // ← Cambiar de 500 a 1000
+private String realiz;
     @Basic(optional = false)
     @NotNull
     @Column(precision = 10, scale = 4)
     private BigDecimal cumplipct;
-    @Size(max = 4000)
-    @Column(length = 4000)
-    private String observ;
+@Size(max = 1000)           // ← Cambiar de 500 a 1000
+@Column(length = 1000)      // ← Cambiar de 500 a 1000
+private String observ;
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 20)

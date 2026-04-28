@@ -46,9 +46,9 @@ public class Plnacciondeta implements Serializable {
     private BigInteger idaccionpao;
     @Basic(optional = false)
     @NotNull
-    @Size(min = 1, max = 500)
-    @Column(nullable = false, length = 500)
-    private String descrip;
+@Size(min = 1, max = 1000)  // ← Cambiar
+@Column(length = 1000)      // ← Cambiar
+private String descrip;
     @Column(precision = 12, scale = 2)
     private BigDecimal presupropues;
     @Column(precision = 12, scale = 2)
@@ -57,9 +57,9 @@ public class Plnacciondeta implements Serializable {
     private BigDecimal valorproyec;
     @Column(precision = 12, scale = 2)
     private BigDecimal valorejecu;
-    @Size(max = 500)
-    @Column(length = 500)
-    private String medioverifi;
+@Size(max = 1000)           // ← Cambiar
+@Column(length = 1000)      // ← Cambiar
+private String medioverifi;
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 20)
@@ -87,6 +87,9 @@ public class Plnacciondeta implements Serializable {
     @JoinColumn(name = "IDPAO", referencedColumnName = "IDPAO", nullable = false)
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private Plnpao idpao;
+    @Transient
+    private Plnaccioneval ultimaEvaluacion;
+// + Getter y Setter
 
     public Plnacciondeta() {
     }
@@ -272,6 +275,16 @@ public class Plnacciondeta implements Serializable {
     public void setEditando(boolean editando) {
         this.editando = editando;
     }
+
+    public Plnaccioneval getUltimaEvaluacion() {
+        return ultimaEvaluacion;
+    }
+
+    public void setUltimaEvaluacion(Plnaccioneval ultimaEvaluacion) {
+        this.ultimaEvaluacion = ultimaEvaluacion;
+    }
+    
+    
 
     
 }

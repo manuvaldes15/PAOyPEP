@@ -83,6 +83,21 @@ public class Plnaccionseguimiento implements Serializable {
         this.usercrea = usercrea;
         this.fchacrea = fchacrea;
     }
+    
+    
+    //DATOS PARA OBTENER PERIODO Y CUMPLIMIENTO DE LA EVALUACION QUE NECESITA SEGUIMIENTO
+    @javax.persistence.Transient
+    private String periodoEvaluacion;
+    
+    @javax.persistence.Transient
+    private BigDecimal cumplimientoEvaluacion;
+
+    public String getPeriodoEvaluacion() { return periodoEvaluacion; }
+    public void setPeriodoEvaluacion(String periodoEvaluacion) { this.periodoEvaluacion = periodoEvaluacion; }
+
+    public BigDecimal getCumplimientoEvaluacion() { return cumplimientoEvaluacion; }
+    public void setCumplimientoEvaluacion(BigDecimal cumplimientoEvaluacion) { this.cumplimientoEvaluacion = cumplimientoEvaluacion; }
+    
 
     public BigInteger getIdseguimiento() {
         return idseguimiento;

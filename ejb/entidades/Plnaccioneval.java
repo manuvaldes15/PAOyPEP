@@ -45,20 +45,20 @@ public class Plnaccioneval implements Serializable {
     @Size(max = 100)
     @Column(length = 100)
     private String perieval;
-    @Size(max = 500)
-    @Column(length = 500)
-    private String proyec;
-    @Size(max = 500)
-    @Column(length = 500)
-    private String realiz;
+@Size(max = 1000)           // ← Cambiar
+@Column(length = 1000)      // ← Cambiar
+private String proyec;
+@Size(max = 1000)           // ← Cambiar
+@Column(length = 1000)      // ← Cambiar
+private String realiz;
     @Column(precision = 10, scale = 4)
     private BigDecimal cumplipct;
-    @Size(max = 1000)
-    @Column(length = 1000)
-    private String descriprealiz;
-    @Size(max = 500)
-    @Column(length = 500)
-    private String observ;
+@Size(max = 1000)           // ← Cambiar
+@Column(length = 1000)      // ← Cambiar
+private String descriprealiz;
+@Size(max = 1000)           // ← Cambiar
+@Column(length = 1000)      // ← Cambiar
+private String observ;
     @Basic(optional = false)
     @NotNull
     @Size(min = 1, max = 20)
