@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rptPlaneacionPEP" language="groovy" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="aaaa0000-0000-0000-0000-000000000000">
-	<property name="ireport.zoom" value="1.771561000000072"/>
+	<property name="ireport.zoom" value="2.593742460100107"/>
 	<property name="ireport.x" value="0"/>
 	<property name="ireport.y" value="0"/>
 	<parameter name="idPepSeleccionado" class="java.lang.Integer"/>
@@ -324,14 +324,29 @@ ORDER BY pe.IDPEP, m.NOMBRE, oe.CODIGOOE, ind.CODIGOINDICADOR, le.IDESTRATEGIA]]
 			</textField>
 		</band>
 	</detail>
-	<summary>
-		<band height="1">
-			<line>
-				<reportElement uuid="ffff0000-0000-0000-0000-000000000001" x="0" y="0" width="802" height="1" forecolor="#375623"/>
-				<graphicElement>
-					<pen lineWidth="0.5"/>
-				</graphicElement>
-			</line>
+	<pageFooter>
+		<band height="24">
+			<textField pattern="dd/MM/yyyy HH:mm">
+				<reportElement uuid="c0cabb22-9d74-4754-bc67-68fd39a51879" x="1" y="4" width="100" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement uuid="f083d5ba-f187-4ba3-8884-b94b9ba44042" x="657" y="4" width="80" height="20"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Página "+$V{PAGE_NUMBER}+" de"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement uuid="d6b8b65e-2b19-4b8b-bc88-d82d07d943af" x="738" y="4" width="65" height="20"/>
+				<textElement verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
 		</band>
-	</summary>
+	</pageFooter>
 </jasperReport>

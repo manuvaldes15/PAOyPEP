@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="rptSeguimientoGerencialPAO" pageWidth="612" pageHeight="792" whenNoDataType="AllSectionsNoDetail" columnWidth="572" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="c3f5f091-7e2e-420d-96b7-5de83c26a7fe">
+	<property name="ireport.zoom" value="2.6573415000000047"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<parameter name="idPao" class="java.lang.Integer"/>
+	<parameter name="perievalFiltro" class="java.lang.String">
+		<parameterDescription><![CDATA[Periodo a filtrar]]></parameterDescription>
+	</parameter>
+	<queryString>
+		<![CDATA[SELECT DISTINCT
+            se.IDSEGUIMIENTO,
+            se.ESTADO,
+            se.ACCIREQUE,
+            se.COMPROMISO,
+            se.FCHACREA,
+            NVL(ev.PERIEVAL, 'Sin Período') AS PERIEVAL,
+            NVL(ev.CUMPLIPCT, 0) AS CUMPLIPCT,
+            acc.DESCRIP AS ACCION_DESCRIP,
+            pa.NOMBREPAO,
+            pa.ANIO,
+            pep.DESCRIP AS NOMBRE_PEP,
+            pep.ANIOINI || ' - ' || pep.ANIOFIN AS VIGENCIA_PEP
+        FROM COOPONEDS.PLNACCIONSEGUIMIENTO se
+        INNER JOIN COOPONEDS.PLNACCIONDETA acc ON se.IDACCIONPAO = acc.IDACCIONPAO
+        INNER JOIN COOPONEDS.PLNPAO pa ON acc.IDPAO = pa.IDPAO
+        INNER JOIN COOPONEDS.PLNPEP pep ON pa.IDPEP = pep.IDPEP
+        LEFT JOIN COOPONEDS.PLNACCIONEVAL ev ON acc.IDACCIONPAO = ev.IDACCIONPAO
+        WHERE pa.IDPAO = $P{idPao}
+          AND (
+              $P{perievalFiltro} IS NULL OR $P{perievalFiltro} = '' OR $P{perievalFiltro} = '0'
+              OR
+              (CASE ev.PERIEVAL
+                  WHEN 'ENERO - MARZO' THEN 1
+                  WHEN 'ENERO - JUNIO' THEN 2
+                  WHEN 'ENERO - SEPTIEMBRE' THEN 3
+                  WHEN 'ENERO - DICIEMBRE' THEN 4
+                  ELSE 5
+              END)
+              <=
+              (CASE $P{perievalFiltro}
+                  WHEN 'ENERO - MARZO' THEN 1
+                  WHEN 'ENERO - JUNIO' THEN 2
+                  WHEN 'ENERO - SEPTIEMBRE' THEN 3
+                  WHEN 'ENERO - DICIEMBRE' THEN 4
+                  ELSE 0
+              END)
+          )
+        ORDER BY NVL(ev.PERIEVAL, 'Sin Período') ASC, acc.DESCRIP ASC, se.FCHACREA DESC]]>
+	</queryString>
+	<field name="IDSEGUIMIENTO" class="java.math.BigDecimal"/>
+	<field name="ESTADO" class="java.lang.String"/>
+	<field name="ACCIREQUE" class="java.lang.String"/>
+	<field name="COMPROMISO" class="java.lang.String"/>
+	<field name="FCHACREA" class="java.sql.Timestamp"/>
+	<field name="PERIEVAL" class="java.lang.String"/>
+	<field name="CUMPLIPCT" class="java.math.BigDecimal"/>
+	<field name="ACCION_DESCRIP" class="java.lang.String"/>
+	<field name="NOMBREPAO" class="java.lang.String"/>
+	<field name="ANIO" class="java.math.BigDecimal"/>
+	<field name="NOMBRE_PEP" class="java.lang.String"/>
+	<field name="VIGENCIA_PEP" class="java.lang.String"/>
+	<group name="grpPeriodo">
+		<groupExpression><![CDATA[$F{PERIEVAL}]]></groupExpression>
+		<groupHeader>
+			<band height="30">
+				<staticText>
+					<reportElement uuid="11111111-2222-3333-4444-555555555551" mode="Opaque" x="0" y="5" width="572" height="20" backcolor="#F4F6F6"/>
+					<box>
+						<topPen lineWidth="1.0" lineColor="#BDC3C7"/>
+						<bottomPen lineWidth="1.0" lineColor="#BDC3C7"/>
+					</box>
+					<textElement/>
+					<text><![CDATA[]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+					<reportElement uuid="100e8400-e29b-41d4-a716-446655440001" mode="Opaque" x="0" y="5" width="572" height="20" forecolor="#E2EFDA" backcolor="#375623"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+						<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Período Reportado: " + $F{PERIEVAL}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="10"/>
+		</groupFooter>
+	</group>
+	<group name="grpAccion">
+		<groupExpression><![CDATA[$F{ACCION_DESCRIP}]]></groupExpression>
+		<groupHeader>
+			<band height="40">
+				<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+					<reportElement uuid="200e8400-e29b-41d4-a716-446655440002" mode="Opaque" x="15" y="5" width="405" height="18" forecolor="#375623" backcolor="#E2EFDA"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+						<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Actividad: " + $F{ACCION_DESCRIP}]]></textFieldExpression>
+				</textField>
+				<staticText>
+					<reportElement uuid="300e8400-e29b-41d4-a716-446655440003" mode="Transparent" x="15" y="25" width="215" height="15" forecolor="#7F8C8D"/>
+					<box>
+						<bottomPen lineWidth="1.0" lineColor="#BDC3C7"/>
+					</box>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[ACCIÓN REQUERIDA]]></text>
+				</staticText>
+				<staticText>
+					<reportElement uuid="400e8400-e29b-41d4-a716-446655440004" mode="Transparent" x="235" y="25" width="185" height="15" forecolor="#7F8C8D"/>
+					<box>
+						<bottomPen lineWidth="1.0" lineColor="#BDC3C7"/>
+					</box>
+					<textElement textAlignment="Left" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[COMPROMISO / AVANCE]]></text>
+				</staticText>
+				<staticText>
+					<reportElement uuid="500e8400-e29b-41d4-a716-446655440005" mode="Transparent" x="425" y="25" width="70" height="15" forecolor="#7F8C8D"/>
+					<box>
+						<bottomPen lineWidth="1.0" lineColor="#BDC3C7"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[ESTADO]]></text>
+				</staticText>
+				<staticText>
+					<reportElement uuid="600e8400-e29b-41d4-a716-446655440006" mode="Transparent" x="500" y="25" width="72" height="15" forecolor="#7F8C8D"/>
+					<box>
+						<bottomPen lineWidth="1.0" lineColor="#BDC3C7"/>
+					</box>
+					<textElement textAlignment="Center" verticalAlignment="Middle">
+						<font size="8" isBold="true"/>
+					</textElement>
+					<text><![CDATA[FECHA REG.]]></text>
+				</staticText>
+				<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+					<reportElement uuid="200e8400-e29b-41d4-a716-446655440002" mode="Opaque" x="420" y="5" width="152" height="18" forecolor="#E2EFDA" backcolor="#375623"/>
+					<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+						<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+						<paragraph lineSpacing="Single"/>
+					</textElement>
+					<textFieldExpression><![CDATA["Cumplimiento: " + $F{CUMPLIPCT} + "%"]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="10"/>
+		</groupFooter>
+	</group>
+	<title>
+		<band height="90">
+			<staticText>
+				<reportElement uuid="fac73bff-ef09-4f55-940f-adca1d838b64" mode="Transparent" x="0" y="0" width="572" height="25" forecolor="#2C3E50" backcolor="#FFFFFF"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="14" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[INFORME DE DESVIACIONES Y SEGUIMIENTO]]></text>
+			</staticText>
+			<staticText>
+				<reportElement uuid="700e8400-e29b-41d4-a716-446655440007" mode="Opaque" x="0" y="40" width="50" height="15" forecolor="#E2EFDA" backcolor="#375623"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[PEP:]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="true">
+				<reportElement uuid="800e8400-e29b-41d4-a716-446655440008" mode="Opaque" x="50" y="40" width="263" height="15" forecolor="#375623" backcolor="#E2EFDA"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{NOMBRE_PEP}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement uuid="900e8400-e29b-41d4-a716-446655440009" mode="Opaque" x="326" y="40" width="99" height="15" forecolor="#E2EFDA" backcolor="#375623"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[VIGENCIA PEP:]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="a00e8400-e29b-41d4-a716-446655440010" mode="Opaque" x="425" y="40" width="147" height="15" forecolor="#375623" backcolor="#E2EFDA"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{VIGENCIA_PEP}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement uuid="b00e8400-e29b-41d4-a716-446655440011" mode="Opaque" x="0" y="60" width="50" height="15" forecolor="#E2EFDA" backcolor="#375623"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[PAO:]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" pattern="" isBlankWhenNull="false">
+				<reportElement uuid="c00e8400-e29b-41d4-a716-446655440012" mode="Opaque" x="50" y="60" width="263" height="15" forecolor="#375623" backcolor="#E2EFDA"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{NOMBREPAO}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement uuid="d00e8400-e29b-41d4-a716-446655440013" mode="Opaque" x="326" y="60" width="99" height="15" forecolor="#E2EFDA" backcolor="#375623"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<text><![CDATA[AÑO:]]></text>
+			</staticText>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement uuid="9f3b2077-c883-4c26-9fb2-043a66b0ea6c" mode="Opaque" x="425" y="60" width="147" height="15" forecolor="#375623" backcolor="#E2EFDA"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle" rotation="None" markup="none">
+					<font fontName="SansSerif" size="10" isBold="true" isItalic="false" isUnderline="false" isStrikeThrough="false" pdfEncoding="Cp1252" isPdfEmbedded="false"/>
+					<paragraph lineSpacing="Single"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ANIO}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="20" splitType="Prevent">
+			<staticText>
+				<reportElement uuid="11111111-2222-3333-4444-555555555554" mode="Transparent" x="15" y="19" width="557" height="1"/>
+				<box>
+					<bottomPen lineWidth="0.25" lineColor="#ECF0F1"/>
+				</box>
+				<textElement/>
+				<text><![CDATA[]]></text>
+			</staticText>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="147bcaeb-6545-45f3-8ba2-e94a3d9f942b" stretchType="RelativeToTallestObject" x="15" y="2" width="215" height="16" forecolor="#2C3E50"/>
+				<textElement verticalAlignment="Top">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ACCIREQUE}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="d0e100b3-398c-4481-bafb-0af236767e37" stretchType="RelativeToTallestObject" x="235" y="2" width="185" height="16" forecolor="#2C3E50"/>
+				<textElement verticalAlignment="Top">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{COMPROMISO}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement uuid="e9e07f51-473c-41fb-b5ef-0bb2ed4923e1" stretchType="RelativeToTallestObject" x="425" y="2" width="70" height="16" forecolor="#2C3E50"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{ESTADO}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true" pattern="dd/MM/yyyy" isBlankWhenNull="true">
+				<reportElement uuid="85119ed7-667c-46dd-a177-225888f011e1" stretchType="RelativeToTallestObject" x="500" y="2" width="72" height="16" forecolor="#7F8C8D"/>
+				<textElement textAlignment="Center" verticalAlignment="Top">
+					<font size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{FCHACREA}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="25">
+			<textField>
+				<reportElement uuid="f083d5ba-f187-4ba3-8884-b94b9ba44042" x="452" y="5" width="80" height="15" forecolor="#7F8C8D"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Página "+$V{PAGE_NUMBER}+" de"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement uuid="d6b8b65e-2b19-4b8b-bc88-d82d07d943af" x="532" y="5" width="40" height="15" forecolor="#7F8C8D"/>
+				<textElement verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField pattern="dd/MM/yyyy HH:mm">
+				<reportElement uuid="c0cabb22-9d74-4754-bc67-68fd39a51879" x="0" y="5" width="100" height="15" forecolor="#7F8C8D"/>
+				<textElement verticalAlignment="Middle">
+					<font size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA[new java.util.Date()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement uuid="11111111-2222-3333-4444-555555555555" mode="Transparent" x="0" y="0" width="572" height="1"/>
+				<box>
+					<topPen lineWidth="0.5" lineColor="#BDC3C7"/>
+				</box>
+				<textElement/>
+				<text><![CDATA[]]></text>
+			</staticText>
+		</band>
+	</pageFooter>
+</jasperReport>
